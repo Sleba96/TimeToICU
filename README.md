@@ -12,7 +12,7 @@ Project name: `sg-health-monitor` (final). The GitHub repository is still called
 - Collects context for later research: rainfall, air temperature, PSI, 24-hour and 1-hour PM2.5, taxi availability near each hospital, public holidays, school holidays (entered by hand), and the national ICU utilisation series by epi-week (2023-09 to 2024-08).
 - Logs every run, keeps raw payloads under a documented retention policy, and flags schema changes and unknown labels instead of guessing.
 
-The web interface is not built yet. Design starts from a written brief, not a template.
+The first web screen (map, pins, bottom sheet) is in `web/`; see `web/README.md`. Design follows `docs/design-brief.md`.
 
 ## What it will not do
 
