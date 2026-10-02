@@ -2,6 +2,14 @@
 
 Decisions that shape scope, data or governance. Newest first. Each entry says what was decided, why, and what would reopen it.
 
+## D-011 · 2026-10-02 · School holidays entered by hand, not collected
+
+**Decision.** `school_holiday` holds MK, primary and secondary school holidays for 2026, typed in from the MOE academic calendar with the source URL and retrieval date. There is no collector.
+
+**Why.** MOE publishes no dataset or API, only an HTML calendar, and its reuse terms are unverified. A scraper would be fragile and would rest on terms nobody has checked; dates change once a year, so a short manual table costs less. School holidays are a plausible driver of paediatric and less urgent attendances, so the dates are worth having.
+
+**Action for the author.** Add 2027 when MOE publishes it, and check MOE's terms before releasing this table in the CC BY export.
+
 ## D-010 · 2026-10-02 · ICU epi-week series: assumed week convention, label kept
 
 **Decision.** `icu_epiweek` is stored as three national metrics (`icu_beds_covid`, `icu_beds_noncovid`, `icu_beds_empty`) at location `SG`. Observation time is the Sunday that starts the epi-week, assuming MMWR numbering (week 1 is the first Sunday-to-Saturday week with four days in the year). The original label, for example `2023-09`, is stored in `value_text`.
