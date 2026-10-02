@@ -2,6 +2,14 @@
 
 Decisions that shape scope, data or governance. Newest first. Each entry says what was decided, why, and what would reopen it.
 
+## D-012 · 2026-10-02 · v1 is a map-first public interface; caveats and 995 live in the sheet and footer
+
+**Decision.** The first view is the map. Each site with a feed shows its current reading as a large number on the pin. Tapping a site opens a bottom sheet with the detail, the source definition caveat (statistic undefined; Alexandra is an Urgent Care Centre, not an ED) and the typical range. No text sits above the map. Rain, PM2.5 and taxi availability are toggleable layers. The "call 995" reminder lives in the footer and about page only. Itinerary from the visitor's location and taxi-based features are later phases; v1 leaves room for them.
+
+**Why.** The user's priority is a consumer-facing UX, not a data dashboard. The user judged the statistic caveat not crucial on the pin and chose footer-only for 995; recorded as their explicit sign-off, with the risk noted that the pin number can be read across sites. Pins are never ranked, ordered or coloured by wait (D-001, D-005).
+
+**Reopen if** user testing shows people compare pins as a ranking, or if the 995 placement draws a safety objection. Any routing that combines travel time with waits needs its own decision.
+
 ## D-011 · 2026-10-02 · School holidays entered by hand, not collected
 
 **Decision.** `school_holiday` holds MK, primary and secondary school holidays for 2026, typed in from the MOE academic calendar with the source URL and retrieval date. There is no collector.
