@@ -10,6 +10,6 @@ Public interface: a map of the public emergency sites. Four publish an ED waitin
 - Map labels use Noto Sans glyphs in `public/fonts` (SIL OFL 1.1, from protomaps/basemaps-assets).
 - Vercel: root directory `web`.
 
-Run: `npm install && npm run dev`.
+Run: `npm install && npm run dev`. Tests: `npm test` (Node 22.6+; bands, age text, unchanged-figure logic and tag placement).
 
-Not built yet: the usual range (the sheet says "Not enough data yet") and the dark map. The NEA band limits above "Normal" (55 µg/m³) in `lib/layers.ts` are not yet confirmed against NEA.
+Not built yet: the usual range (the sheet says "Not enough data yet") and the dark map. The NEA band limits in `lib/layers.ts` were checked against haze.gov.sg on 2026-10-02.

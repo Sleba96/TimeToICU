@@ -91,5 +91,5 @@ Rain and air quality can be shown as colour on the map. Light is less, dark is m
 ## Open points
 
 - "Usual range · Not enough data yet" replaces "Collecting data". Say if you prefer the old wording.
-- Air band names and the 55 µg/m³ scale end are not yet confirmed against NEA.
+- Air band names and limits are confirmed against NEA (haze.gov.sg, 2026-10-02). NEA writes "Very High"; the interface writes "Very high".
 - "Children's emergency department" is long for the eyebrow at 11px; it wraps on a narrow phone.

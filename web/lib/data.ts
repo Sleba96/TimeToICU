@@ -29,7 +29,7 @@ type HospitalRow = {
   location: { code: string; name: string; lat: number; lon: number };
 };
 type ObservationRow = { location: string; metric: string; value: number | null; fetched_at: string };
-type HistoryRow = { value: number | null; ref_time: string; location: { code: string } };
+export type HistoryRow = { value: number | null; ref_time: string; location: { code: string } };
 
 const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -47,7 +47,7 @@ function facility(t: string): Facility {
 
 // Minutes the newest figure has stayed unchanged, walking back through our own 5-minute history.
 // Rows are newest first. The result is a lower bound when the history window ends before the change.
-function unchangedMinutes(rows: HistoryRow[]): number | null {
+export function unchangedMinutes(rows: HistoryRow[]): number | null {
   if (rows.length === 0 || rows[0].value === null) return null;
   const newest = new Date(rows[0].ref_time).getTime();
   let oldest = newest;

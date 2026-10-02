@@ -2,11 +2,23 @@
 
 Decisions that shape scope, data or governance. Newest first. Each entry says what was decided, why, and what would reopen it.
 
+## D-016 · 2026-10-02 · Finding: the ED feed has not changed since collection began (provisional)
+
+**Finding.** From the first collection (2026-10-02 04:10 UTC) to 09:45 UTC, each of the four sites returned the same figure on all 68 polls: TTSH 61, KTPH 64, Woodlands 17, Alexandra UCC 240. The upstream datastore, called directly at the end of that window, returned the same four numbers, so this is not a collector fault. The dataset is titled "ED Waiting Times (2025)", a search result shows it last updated on 19 August 2025, the data.gov.sg dataset page says the dataset was not found or unpublished, and the v2 metadata endpoint answers that the dataset id does not exist, while the datastore endpoint still serves the four rows.
+
+**Reading.** The source is most likely no longer updated, and the numbers we show are a frozen snapshot. This is not proven: only 5.5 hours of history exist, and a real queue would normally move over that time at four sites. A few days of unchanged history would settle it.
+
+**Effect today.** The sheet says "Waiting time as published." and adds "This figure has not changed for …" after 30 minutes. That is honest about the age, but the big number still looks live. This touches D-006 (freshness) and D-012 (first view).
+
+**Action for the author.** Decide how the interface should treat a figure that has not moved for a long time (open question). Look for a successor dataset on data.gov.sg or MOH, and write to the publisher.
+
+**Reopen if** the feed starts changing, or a newer dataset is found.
+
 ## D-015 · 2026-10-02 · Layers: rain and air as colour on the map; taxis in the hospital sheet (provisional)
 
 **Decision.** Two chips, Rain and Air quality, toggle colour layers on the map. Zoomed out, each active layer paints soft colour on land, one hue per layer (rain blue, air violet); no red or green (red stays for the selected site and 995). Rain is a gradient, light for less and dark for more, and uncoloured where it is dry. Air is shown in the four NEA bands (Normal, Elevated, High, Very high) as five soft regional zones: Normal is left uncoloured, so only zones above normal are tinted, in three steps of the same violet. The legend writes the lowest and highest value of the rain scale (and "No rain at the moment." when every station reads 0), and names the four air bands, as a thin strip of one row per active layer pinned above the footer (chosen over legends inside the chips or a floating card, which cover the map or the northern pins). Zoomed in, the colour is fainter and figures appear beside each site (rain in mm at the nearest station, PM2.5 in µg/m³ with the NEA band name in text). Both layers may be on together. Taxis are not a map layer: the count of available taxis within 2 km is a row in each hospital's sheet ("Taxis free within 2 km"), from the data already stored (D-007), so no taxi positions are needed.
 
-**Provisional.** Rain starts as a smooth blend between about 90 stations, which suggests more precision than the data has; we may return to one cell per station. The rain scale end ("5 mm or more" per 5 minutes) is a proposal. NEA confirms Normal as 55 µg/m³ and below; the upper limits of Elevated, High and Very high (150 and 250) are not yet confirmed.
+**Provisional.** Rain starts as a smooth blend between about 90 stations, which suggests more precision than the data has; we may return to one cell per station. The air bands match NEA's 1-hour PM2.5 table on haze.gov.sg (Normal 0 to 55, Elevated 56 to 150, High 151 to 250, Very High 251 and above; checked 2026-10-02). The rain scale end ("5 mm or more" per 5 minutes, about 60 mm an hour) is our own choice: NEA publishes no official scale for 5-minute totals and public sources disagree on intensity classes.
 
 This supersedes the earlier idea of figures-only layers with no colour. Colour is used for layers, never for ED waits.
 

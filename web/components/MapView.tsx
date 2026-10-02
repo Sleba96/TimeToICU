@@ -6,6 +6,7 @@ import { Protocol } from "pmtiles";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { style } from "@/lib/mapStyle";
 import type { Site } from "@/lib/data";
+import { placeTags, type Rect, type TagBox } from "@/lib/placement";
 import { FIELD_COORDS, airBand, airField, nearestRain, rainField, rainText, type LayerData, type LayerKey } from "@/lib/layers";
 
 maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
@@ -15,7 +16,6 @@ const SHEET_PAD = 300;
 const NEAR_ZOOM = 12; // from here, rain figures appear beside each site
 const MID_ZOOM = 11; // from here, the air regions are labelled
 
-type Rect = [number, number, number, number]; // left, top, right, bottom
 type Entry = { marker: maplibregl.Marker; root: HTMLElement; tag: HTMLElement; lead: HTMLElement; pill: HTMLElement; site: Site };
 
 function pinLabel(s: Site) {
@@ -51,12 +51,6 @@ function buildSite(s: Site, onSelect: (code: string) => void): Omit<Entry, "mark
   });
   root.append(lead, dot, pill, tag);
   return { root, tag, lead, pill, site: s };
-}
-
-function overlap(a: Rect, b: Rect, pad = 3): number {
-  const w = Math.min(a[2], b[2]) - Math.max(a[0], b[0]) + pad;
-  const h = Math.min(a[3], b[3]) - Math.max(a[1], b[1]) + pad;
-  return w > 0 && h > 0 ? w * h : 0;
 }
 
 export default function MapView({
@@ -102,42 +96,19 @@ export default function MapView({
     );
     const rain = live.current.data.rain;
     const obstacles: Rect[] = [];
-    const pos = new Map<Entry, { x: number; y: number }>();
+    const boxes: TagBox[] = [];
     for (const e of list) {
       const p = m.project([e.site.lon, e.site.lat]);
-      pos.set(e, { x: p.x, y: p.y });
       obstacles.push([p.x - 5, p.y - 5, p.x + 5, p.y + 5]);
       const showPill = live.current.layers.has("rain") && !!rain && z >= NEAR_ZOOM;
       const text = showPill && rain ? rainText(nearestRain(rain, e.site.lat, e.site.lon)) : "";
       if (e.pill.textContent !== text) e.pill.textContent = text;
       if (showPill) obstacles.push([p.x - e.pill.offsetWidth / 2, p.y + 8, p.x + e.pill.offsetWidth / 2, p.y + 8 + e.pill.offsetHeight]);
+      boxes.push({ id: e.site.code, x: p.x, y: p.y, w: e.tag.offsetWidth || 70, h: e.tag.offsetHeight || 44 });
     }
-    const placed: Rect[] = [];
+    const offsets = placeTags(boxes, obstacles, { width: W, height: H, top: 56 });
     for (const e of list) {
-      const { x, y } = pos.get(e)!;
-      const w = e.tag.offsetWidth || 70;
-      const h = e.tag.offsetHeight || 44;
-      const side = w / 2 + 12;
-      const offsets: [number, number][] = [];
-      for (const k of [1, 1.8, 2.6]) {
-        offsets.push([0, -22 * k], [side * k, -10 * k], [-side * k, -10 * k], [0, (h + 22) * k], [side * k, (h + 10) * k], [-side * k, (h + 10) * k]);
-      }
-      let best = offsets[0];
-      let bestCost = Infinity;
-      for (const [dx, dy] of offsets) {
-        const r: Rect = [x + dx - w / 2, y + dy - h, x + dx + w / 2, y + dy];
-        let cost = 0;
-        for (const o of obstacles) cost += overlap(r, o);
-        for (const o of placed) cost += overlap(r, o) * 4;
-        if (r[0] < 4 || r[2] > W - 4 || r[1] < 56 || r[3] > H - 4) cost += 5000;
-        if (cost < bestCost) {
-          bestCost = cost;
-          best = [dx, dy];
-          if (cost === 0) break;
-        }
-      }
-      const [dx, dy] = best;
-      placed.push([x + dx - w / 2, y + dy - h, x + dx + w / 2, y + dy]);
+      const [dx, dy] = offsets.get(e.site.code) ?? [0, -22];
       e.tag.style.left = `${dx}px`;
       e.tag.style.top = `${dy}px`;
       e.lead.style.width = `${Math.hypot(dx, dy)}px`;
