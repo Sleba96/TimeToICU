@@ -1,0 +1,11 @@
+{
+  "name": "sg-queue-monitor",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-strip-types --no-warnings --test 'tests/**/*.test.ts'"
+  },
+  "engines": {
+    "node": ">=22.6"
+  }
+}
