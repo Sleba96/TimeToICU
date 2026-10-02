@@ -2,13 +2,15 @@
 
 Decisions that shape scope, data or governance. Newest first. Each entry says what was decided, why, and what would reopen it.
 
-## D-015 · 2026-10-02 · Layers: colour on the map, figures on zoom (provisional)
+## D-015 · 2026-10-02 · Layers: rain and air as colour on the map; taxis in the hospital sheet (provisional)
 
-**Decision.** Rain, PM2.5 and taxis are toggled by chips. Zoomed out, each active layer paints soft colour on the map, one hue per layer (rain blue, air violet, taxis amber), light for less and dark for more, with a small legend; no red or green (red stays for the selected site and 995). Zoomed in, the colour stays fainter and figures appear beside each site (rain in mm at the nearest station, taxis within 2 km, PM2.5 in µg/m³ with the NEA band name in text). Any combination of layers may be on. Rain starts as a smooth blend between stations. PM2.5 is five soft regional zones, because only five regions are published. Taxi density is read live from the LTA feed and positions are not stored (D-007).
+**Decision.** Two chips, Rain and Air quality, toggle colour layers on the map. Zoomed out, each active layer paints soft colour, one hue per layer (rain blue, air violet), light for less and dark for more; no red or green (red stays for the selected site and 995). A legend writes the lowest and highest value of each fixed scale. Zoomed in, the colour is fainter and figures appear beside each site (rain in mm at the nearest station, PM2.5 in µg/m³ with the NEA band name in text). Both layers may be on together. Taxis are not a map layer: the count of available taxis within 2 km is a row in each hospital's sheet ("Taxis free within 2 km"), from the data already stored (D-007), so no taxi positions are needed.
 
-**Provisional.** The smooth rain blend suggests more precision than about 90 stations give. We may return to one cell per station. This supersedes the earlier idea of figures-only layers with NEA band names and no colour. It also changes D-012 in one respect: colour is used for layers, never for ED waits.
+**Provisional.** Rain starts as a smooth blend between about 90 stations, which suggests more precision than the data has; we may return to one cell per station. PM2.5 is five soft regional zones. The scale ends (rain "5 mm or more" per 5 minutes, PM2.5 "55 µg/m³ or more") are proposals; 55 is meant as the top of NEA's Normal band and is not yet confirmed against NEA.
 
-**Reopen if** blended rain is read as exact, the three hues are muddy together, or colour on the map hides the ED numbers.
+This supersedes the earlier idea of figures-only layers with no colour. Colour is used for layers, never for ED waits.
+
+**Reopen if** blended rain is read as exact, colour hides the ED numbers, or the taxi count in the sheet is read as advice on how to travel.
 
 ## D-014 · 2026-10-02 · Sites without open data: quiet "No data" tags, tappable, reason-only sheet
 
