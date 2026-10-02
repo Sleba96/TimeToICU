@@ -6,15 +6,26 @@ export type LayerData = { rain: RainData | null; air: AirData | null };
 export type LayerKey = "rain" | "air";
 
 // Fixed scales, so a calm day looks calm. The ends are what the legend writes.
-export const RAIN = { max: 5, rgb: [29, 79, 145] as const, lo: "0 mm", hi: "5 mm or more", title: "Rain, last 5 min" };
-export const AIR = { max: 55, rgb: [106, 76, 156] as const, lo: "0 µg/m³", hi: "55 or more", title: "PM2.5, 1 hour" };
+export const RAIN = { max: 5, rgb: [29, 79, 145] as const, lo: "0 mm", hi: "5 mm or more", title: "Rain, last 5 min", dry: "No rain at the moment." };
+// Air is shown in the four NEA bands, not as a gradient. Normal is left uncoloured, so only zones above normal are tinted.
+// NEA: Normal is 55 µg/m³ and below. The upper limits of the other bands are not yet confirmed against NEA.
+export const AIR = {
+  rgb: [106, 76, 156] as const,
+  title: "PM2.5, 1 hour",
+  bands: [
+    { name: "Normal", max: 55, alpha: 0 },
+    { name: "Elevated", max: 150, alpha: 0.3 },
+    { name: "High", max: 250, alpha: 0.5 },
+    { name: "Very high", max: Infinity, alpha: 0.72 },
+  ],
+};
 
-// NEA names for 1-hour PM2.5 (Normal is 55 µg/m³ and below; the upper limits of the other bands are not yet confirmed).
+export function airBandOf(v: number) {
+  return AIR.bands.find((b) => v <= b.max) ?? AIR.bands[AIR.bands.length - 1];
+}
+
 export function airBand(v: number): string {
-  if (v <= 55) return "Normal";
-  if (v <= 150) return "Elevated";
-  if (v <= 250) return "High";
-  return "Very high";
+  return airBandOf(v).name;
 }
 
 export function rainText(mm: number): string {
@@ -39,7 +50,7 @@ type Point = { lat: number; lon: number; v: number };
 // Rain uses a gentle power (smooth blend). Air uses a steep one, which gives five soft regional zones.
 export function renderField(
   points: Point[],
-  opts: { max: number; rgb: readonly [number, number, number]; power: number; soft: number },
+  opts: { rgb: readonly [number, number, number]; power: number; soft: number; toAlpha: (v: number) => number },
 ): string | null {
   if (points.length === 0 || typeof document === "undefined") return null;
   const w = 285;
@@ -67,24 +78,32 @@ export function renderField(
         num += wt * p.v;
         den += wt;
       }
-      const t = Math.min(1, Math.max(0, num / den / opts.max));
+      const a = Math.min(1, Math.max(0, opts.toAlpha(num / den)));
       const k = (j * w + i) * 4;
       img.data[k] = opts.rgb[0];
       img.data[k + 1] = opts.rgb[1];
       img.data[k + 2] = opts.rgb[2];
-      img.data[k + 3] = Math.round(255 * (0.08 + 0.62 * t));
+      img.data[k + 3] = Math.round(255 * a);
     }
   }
   ctx.putImageData(img, 0, 0);
   return canvas.toDataURL("image/png");
 }
 
+// Rain: a smooth blend between stations, uncoloured where it is dry.
 export function rainField(d: RainData): string | null {
-  return renderField(d.stations.map((s) => ({ lat: s.lat, lon: s.lon, v: s.mm })), { ...RAIN, power: 2, soft: 0.012 });
+  const toAlpha = (mm: number) => (mm <= 0.005 ? 0 : 0.1 + 0.6 * Math.min(1, mm / RAIN.max));
+  return renderField(d.stations.map((s) => ({ lat: s.lat, lon: s.lon, v: s.mm })), { rgb: RAIN.rgb, power: 2, soft: 0.012, toAlpha });
 }
 
+// Air: each region carries the opacity of its band, and the steep blend gives five soft zones.
 export function airField(d: AirData): string | null {
-  return renderField(d.regions.map((r) => ({ lat: r.lat, lon: r.lon, v: r.v })), { ...AIR, power: 6, soft: 0.02 });
+  return renderField(d.regions.map((r) => ({ lat: r.lat, lon: r.lon, v: airBandOf(r.v).alpha })), {
+    rgb: AIR.rgb,
+    power: 6,
+    soft: 0.02,
+    toAlpha: (a) => a,
+  });
 }
 
 // Rain at the station nearest a site.
@@ -101,6 +120,10 @@ export function nearestRain(d: RainData, lat: number, lon: number): number {
   return mm;
 }
 
+export function tint([r, g, b]: readonly [number, number, number], alpha: number): string {
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 export function gradient([r, g, b]: readonly [number, number, number]): string {
-  return `linear-gradient(90deg, rgba(${r},${g},${b},.08), rgba(${r},${g},${b},.7))`;
+  return `linear-gradient(90deg, rgba(${r},${g},${b},.1), rgba(${r},${g},${b},.7))`;
 }

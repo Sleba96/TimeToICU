@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import Footer from "./Footer";
 import Sheet from "./Sheet";
 import { loadSites, type Site } from "@/lib/data";
-import { AIR, RAIN, gradient, type LayerData, type LayerKey } from "@/lib/layers";
+import { AIR, RAIN, gradient, tint, type LayerData, type LayerKey } from "@/lib/layers";
 
 const MapView = dynamic(() => import("./MapView"), { ssr: false });
 const REFRESH_MS = 60_000;
@@ -65,10 +65,9 @@ export default function Home() {
 
   const site = sites.find((s) => s.code === selected) ?? null;
   const missing = loaded ? CHIPS.filter(([k]) => layers.has(k) && !data[k]).map(([, n]) => n) : [];
-  const legend = [
-    layers.has("rain") && data.rain ? { ...RAIN, key: "rain" } : null,
-    layers.has("air") && data.air ? { ...AIR, key: "air" } : null,
-  ].filter((x) => x !== null);
+  const showRain = layers.has("rain") && data.rain !== null;
+  const showAir = layers.has("air") && data.air !== null;
+  const dry = data.rain !== null && data.rain.stations.every((st) => st.mm <= 0);
 
   return (
     <div className="app">
@@ -89,16 +88,30 @@ export default function Home() {
         )}
         {site && <Sheet site={site} onClose={clear} />}
       </main>
-      {legend.length > 0 && (
+      {(showRain || showAir) && (
         <div className="legend" aria-label="Map legend">
-          {legend.map((l) => (
-            <div key={l.key} className="legend-row">
-              <b>{l.title}</b>
-              <span>{l.lo}</span>
-              <i style={{ background: gradient(l.rgb) }} aria-hidden="true" />
-              <span>{l.hi}</span>
+          {showRain && (
+            <>
+              <div className="legend-row">
+                <b>{RAIN.title}</b>
+                <span>{RAIN.lo}</span>
+                <i style={{ background: gradient(RAIN.rgb) }} aria-hidden="true" />
+                <span>{RAIN.hi}</span>
+              </div>
+              {dry && <p className="legend-note">{RAIN.dry}</p>}
+            </>
+          )}
+          {showAir && (
+            <div className="legend-row bands">
+              <b>{AIR.title}</b>
+              {AIR.bands.map((band) => (
+                <span key={band.name} className="band">
+                  <i style={{ background: band.alpha === 0 ? "transparent" : tint(AIR.rgb, band.alpha) }} aria-hidden="true" />
+                  {band.name}
+                </span>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       )}
       <Footer />

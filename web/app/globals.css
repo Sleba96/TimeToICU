@@ -91,6 +91,10 @@ a { color: inherit; }
 .legend-row { display: flex; align-items: center; gap: 8px; }
 .legend-row b { flex: none; width: 112px; font-weight: 800; }
 .legend-row span { flex: none; color: var(--muted); font-weight: 700; white-space: nowrap; }
+.legend-note { margin: 0; font-size: 12px; font-weight: 700; color: var(--muted); }
+.legend-row.bands { flex-wrap: wrap; row-gap: 2px; }
+.legend-row .band { display: inline-flex; align-items: center; gap: 4px; color: var(--ink); }
+.legend-row .band i { flex: none; width: 16px; height: 10px; min-width: 0; }
 .legend-row i { flex: 1; height: 10px; min-width: 40px; border-radius: 2px; border: 1px solid var(--muted); }
 
 /* Map furniture */

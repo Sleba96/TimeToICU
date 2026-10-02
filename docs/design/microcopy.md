@@ -25,7 +25,8 @@ English only for v1. Tone: neutral and sober, short sentences, no advice, no ran
 | Layer | Text |
 | --- | --- |
 | Rain | Rain, last 5 min · 0 mm … 5 mm or more |
-| Air | PM2.5, 1 hour · 0 µg/m³ … 55 or more |
+| Air | PM2.5, 1 hour · Normal, Elevated, High, Very high (swatches; Normal has no colour) |
+| Rain, dry | No rain at the moment. |
 
 ## Figures beside sites (zoomed in)
 
