@@ -2,6 +2,14 @@
 
 Decisions that shape scope, data or governance. Newest first. Each entry says what was decided, why, and what would reopen it.
 
+## D-015 · 2026-10-02 · Layers: colour on the map, figures on zoom (provisional)
+
+**Decision.** Rain, PM2.5 and taxis are toggled by chips. Zoomed out, each active layer paints soft colour on the map, one hue per layer (rain blue, air violet, taxis amber), light for less and dark for more, with a small legend; no red or green (red stays for the selected site and 995). Zoomed in, the colour stays fainter and figures appear beside each site (rain in mm at the nearest station, taxis within 2 km, PM2.5 in µg/m³ with the NEA band name in text). Any combination of layers may be on. Rain starts as a smooth blend between stations. PM2.5 is five soft regional zones, because only five regions are published. Taxi density is read live from the LTA feed and positions are not stored (D-007).
+
+**Provisional.** The smooth rain blend suggests more precision than about 90 stations give. We may return to one cell per station. This supersedes the earlier idea of figures-only layers with NEA band names and no colour. It also changes D-012 in one respect: colour is used for layers, never for ED waits.
+
+**Reopen if** blended rain is read as exact, the three hues are muddy together, or colour on the map hides the ED numbers.
+
 ## D-014 · 2026-10-02 · Sites without open data: quiet "No data" tags, tappable, reason-only sheet
 
 **Decision.** The six public sites with `open_data_status = 'not_published'` (SGH, CGH, SKH, NUH, NTFGH, KKH) are shown on the map as outlined tags with the site name and "No data", in muted ink, with the same tap target as live pins. They are quieter than live pins and never coloured or sorted by wait. Where tags would overlap, each tag is offset from the true coordinate and joined to it by a line; this applies to live pins too. Tapping a gap site opens the sheet with its name, the line "No open waiting time is published for this hospital." and nothing else (995 stays in the footer). KKH's sheet is labelled "Children's emergency department". When a site is selected, the map pans so it sits above the sheet. A selected gap site is red, like a live one (D-012).
