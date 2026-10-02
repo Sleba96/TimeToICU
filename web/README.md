@@ -11,4 +11,4 @@ Public interface: a map of the four sites that publish an ED waiting time. Next.
 
 Run: `npm install && npm run dev`.
 
-Not built yet: rain, PM2.5 and taxi layers, the look of sites with no open data, the dark map, the usual range.
+Not built yet: rain, PM2.5 and taxi layers, the dark map, the usual range.

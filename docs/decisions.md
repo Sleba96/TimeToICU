@@ -2,6 +2,14 @@
 
 Decisions that shape scope, data or governance. Newest first. Each entry says what was decided, why, and what would reopen it.
 
+## D-014 · 2026-10-02 · Sites without open data: quiet "No data" tags, tappable, reason-only sheet
+
+**Decision.** The six public sites with `open_data_status = 'not_published'` (SGH, CGH, SKH, NUH, NTFGH, KKH) are shown on the map as outlined tags with the site name and "No data", in muted ink, with the same tap target as live pins. They are quieter than live pins and never coloured or sorted by wait. Where tags would overlap, each tag is offset from the true coordinate and joined to it by a line; this applies to live pins too. Tapping a gap site opens the sheet with its name, the line "No open waiting time is published for this hospital." and nothing else (995 stays in the footer). KKH's sheet is labelled "Children's emergency department". When a site is selected, the map pans so it sits above the sheet. A selected gap site is red, like a live one (D-012).
+
+**Why.** A map with silent holes reads as broken; a labelled gap is honest (D-003). Quieter styling lets live readings stand out without ranking anything. At island scale the central-south sites sit 11 to 20px apart, so names cannot sit under the dot and tags need an automatic offset layout.
+
+**Reopen if** the offset layout cannot keep tags readable at first view, or user testing shows "No data" read as "no wait".
+
 ## D-013 · 2026-10-02 · Map: MapLibre with a self-hosted OpenStreetMap extract
 
 **Decision.** The map uses MapLibre GL with a Singapore-only PMTiles file cut from the public Protomaps daily build of OpenStreetMap (`scripts/extract-map.sh`, about 29 MB, zoom 0 to 15). The style is ours, following the chosen Water tint and a dark variant. The tile file is hosted by us and not committed to git. Attribution: "© OpenStreetMap contributors" (ODbL). OneMap stays an option for address search and routing later.

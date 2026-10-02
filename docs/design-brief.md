@@ -21,6 +21,7 @@ Built together with the author, one decision at a time. Decisions that shape sco
   - Sheet: "ED" pictogram square (UCC for Alexandra), figure at 48px, rows for age, usual range and source, then the definition-gap line.
   - Nothing imitates an official banner, crest or logo.
 - **Map tint (chosen):** "Water". White land, soft blue sea `#cfe2ef`, pale green parks `#d6e8cf`, coast `#7f9bb0`, grid `#bcd3e2`. Reference: `docs/design/map-tints-mockup.html` (map 1).
+- **Sites with no open data (chosen 2026-10-02, D-014):** outlined tag, muted, showing the name and "No data". Quieter than live pins, same tap target, tappable. Overlapping tags are offset from the true spot with a leader line. Sheet: name and "No open waiting time is published for this hospital."; KKH is labelled "Children's emergency department". Selecting a site pans the map so it sits above the sheet. Reference: `docs/design/gap-pins-mockup.html`.
 - **Dark mode:** user choice, following the device setting by default. Dark map to be designed from the Water tint.
 
 ## Constraints from the data (see `sources.md`)
@@ -31,4 +32,4 @@ Built together with the author, one decision at a time. Decisions that shape sco
 
 ## Still open
 
-Dark version of the Water map, voice and microcopy, how gaps (sites without open data) look, layer visuals for rain, PM2.5 and taxis, map provider and tiles, mobile behaviour of the layer chips.
+Dark version of the Water map, voice and microcopy, layer visuals for rain, PM2.5 and taxis, map provider and tiles, mobile behaviour of the layer chips.
