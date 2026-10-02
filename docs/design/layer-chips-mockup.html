@@ -101,17 +101,17 @@ h1{font-size:1.5rem;margin:0 0 6px;font-weight:800}
 </style>
 
 <main>
-  <h1>Layer chips</h1>
-  <p class="lede">Your choices: figures at each site and an island strip, any combination of layers, round muted figures, and NEA's PM2.5 band names in plain text with no colour. All values are made up.</p>
+  <h1>Layer chips, version 2</h1>
+  <p class="lede">Chips carry the island figure when on. Per-site figures appear only when zoomed in. Air quality regions show at both scales. All values are made up.</p>
   <div class="row">
-    <div class="col"><h2>1. Rain on</h2><div class="phone m1" id="p1"></div><p class="note">Rain at the station nearest each site, and the island strip.</p></div>
-    <div class="col"><h2>2. Air quality on</h2><div class="phone m1" id="p2"></div><p class="note">Five NEA regions, each with its band name and PM2.5 in µg/m³.</p></div>
-    <div class="col"><h2>3. All three on</h2><div class="phone m1" id="p3"></div><p class="note">The busiest case: ten sites, two figures each, five regions.</p></div>
+    <div class="col"><h2>1. All layers off</h2><div class="phone m1" id="p1"></div><p class="note">Plain chips. Same view as the gap-pins mockup.</p></div>
+    <div class="col"><h2>2. All on, island scale</h2><div class="phone m1" id="p2"></div><p class="note">Each chip shows its island figure. No per-site figures. Air regions stay.</p></div>
+    <div class="col"><h2>3. All on, zoomed in</h2><div class="phone m1" id="p3"></div><p class="note">Per-site rain and taxis appear beside each site.</p></div>
   </div>
   <div class="q"><h2>What to react to</h2><ul>
-    <li>Is the round, light figure clearly different from an ED wait?</li>
-    <li>Is picture 3 too busy for a first view? Cutting the per-site figures to the four live sites is one option.</li>
-    <li>Wording: "0.6 mm rain", "14 taxis (2 km)", "Normal · 12 µg/m³". The band names (Normal, Elevated, High, Very high) are NEA's 1-hour PM2.5 bands; I'd confirm them against NEA before building.</li>
+    <li>Do the chips with readouts fit and stay readable? Do they wrap in a way you like?</li>
+    <li>In picture 2, do the chips and air regions now cover the northern pins?</li>
+    <li>In picture 3, is the zoomed view clear enough, or still crowded?</li>
   </ul></div>
 </main>
 <script>
@@ -158,19 +158,13 @@ const SAMPLE={rain:{TTSH:"0",KTPH:"0.6",Woodlands:"1.2","Alexandra UCC":"0",SGH:
  air:[{n:"North",lon:103.84,lat:1.452,v:12},{n:"West",lon:103.69,lat:1.37,v:14},{n:"Central",lon:103.80,lat:1.345,v:13},{n:"East",lon:103.96,lat:1.355,v:10},{n:"South",lon:103.86,lat:1.265,v:15}]};
 // Small offsets (px) of the layer pill from the true coordinate. Hand-placed.
 const LN={TTSH:[10,10],KTPH:[-30,10],Woodlands:[-62,8],"Alexandra UCC":[10,8],SGH:[-4,16],CGH:[-30,12],SKH:[8,12],NUH:[-70,6],NTFGH:[-60,8],KKH:[8,8]};
-function chipsHTML(L){return `<div class="chips">${[["rain","Rain"],["air","Air quality"],["taxi","Taxis"]].map(([k,n])=>`<button class="chip" aria-pressed="${L.has(k)}">${n}</button>`).join("")}</div>`}
-function stripHTML(L){
-  const parts=[];
-  if(L.has("rain"))parts.push("Rain: 3 of 62 stations wet");
-  if(L.has("air"))parts.push("PM2.5: Normal in all regions");
-  if(L.has("taxi"))parts.push("Taxis: 1,812 available");
-  return parts.length?`<div class="strip">${parts.map(p=>`<span>${p}</span>`).join("")}<em>Updated 4 minutes ago</em></div>`:"";
-}
+const READ={rain:"Rain · 3 of 62 wet",air:"Air quality · Normal",taxi:"Taxis · 1,812"};
+function chipsHTML(L){return `<div class="chips">${[["rain","Rain"],["air","Air quality"],["taxi","Taxis"]].map(([k,n])=>`<button class="chip" aria-pressed="${L.has(k)}">${L.has(k)?READ[k]:n}</button>`).join("")}</div>`}
 function layerPills(v,L){
   let h="";
   const all=[...GAP,...LIVE];
-  for(const t of all){
-    const [dx,dy]=LN[t.n]||[8,8];
+  for(const t of all){ if(v===zoom&&!ZN[t.n])continue;
+    const [dx,dy]=(v===zoom?ZL:LN)[t.n]||[8,8];
     const bits=[];
     if(L.has("rain"))bits.push(SAMPLE.rain[t.n]+" mm rain");
     if(L.has("taxi"))bits.push(SAMPLE.taxi[t.n]+" taxis (2 km)");
@@ -182,14 +176,18 @@ function airLabels(v,L){
   if(!L.has("air"))return"";
   return SAMPLE.air.map(a=>`<div class="lp air" style="left:${v.px(a.lon)/W*100}%;top:${v.py(a.lat)/H*100}%">${a.n}<br><b>Normal</b> · ${a.v} µg/m³</div>`).join("");
 }
-function render(id,L,sheetName){
-  const v=full,el=document.getElementById(id);
-  const mk=(t,gap)=>{const [dx,dy]=NUDGE[t.n]||[0,-20];const len=Math.hypot(dx,dy),ang=Math.atan2(dy,dx)*180/Math.PI;
+function render(id,L,v,perSite){
+  const el=document.getElementById(id);
+  const mk=(t,gap)=>{const [dx,dy]=(v===zoom?ZN:NUDGE)[t.n]||[0,-20];const len=Math.hypot(dx,dy),ang=Math.atan2(dy,dx)*180/Math.PI;
     const inner=gap?`<small>${t.n}</small><b>No data</b>`:`<b>${t.v}</b><i>min</i><small>${t.n}</small>`;
     return `<div class="np ${gap?"gap":"live"}" style="left:${v.px(t.lon)/W*100}%;top:${v.py(t.lat)/H*100}%"><div class="lead" style="width:${len}px;transform:rotate(${ang}deg)"></div><div class="dot"></div><div class="tag" style="left:${dx}px;top:${dy}px">${inner}</div></div>`};
-  el.innerHTML=`<div class="map">${svg(v)}${chipsHTML(L)}${stripHTML(L)}${airLabels(v,L)}${GAP.map(t=>mk(t,true)).join("")}${LIVE.map(t=>mk(t,false)).join("")}${layerPills(v,L)}<div class="scale"><span></span>5 km</div><div class="north">N<br>↑</div></div><div class="foot"><strong>Emergency? Call 995</strong><span>About · Sources</span></div>`;
+  el.innerHTML=`<div class="map">${svg(v)}${chipsHTML(L)}${airLabels(v,L)}${GAP.map(t=>mk(t,true)).join("")}${LIVE.map(t=>mk(t,false)).join("")}${perSite?layerPills(v,L):""}<div class="scale"><span></span>5 km</div><div class="north">N<br>↑</div></div><div class="foot"><strong>Emergency? Call 995</strong><span>About · Sources</span></div>`;
 }
-render("p1",new Set(["rain"]));
-render("p2",new Set(["air"]));
-render("p3",new Set(["rain","air","taxi"]));
+const zoom=view(103.715,103.915,1.372,1.252);
+const ZN={TTSH:[0,-22],KKH:[44,-6],"Alexandra UCC":[-6,-26],NUH:[-46,-14],NTFGH:[0,-20],SGH:[42,-6]};
+const ZL={TTSH:[8,6],KKH:[8,6],"Alexandra UCC":[8,8],NUH:[-30,12],NTFGH:[-30,10],SGH:[-30,12]};
+const ALL=new Set(["rain","air","taxi"]);
+render("p1",new Set(),full,false);
+render("p2",ALL,full,false);
+render("p3",ALL,zoom,true);
 </script>
