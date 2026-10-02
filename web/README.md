@@ -1,9 +1,10 @@
 # web
 
-Public interface: a map of the four sites that publish an ED waiting time. Next.js, MapLibre GL, PMTiles.
+Public interface: a map of the public emergency sites. Four publish an ED waiting time; six show as "No data" (D-014). Rain and air quality can be shown as colour (D-015). Next.js, MapLibre GL, PMTiles.
 
 - Look and rules: `docs/design-brief.md`, `docs/decisions.md` (D-012, D-013).
 - Env (see `.env.example`): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Optional `NEXT_PUBLIC_MAP_URL` overrides the tile file.
+- Layers: `app/api/layers/route.ts` reads rain and 1-hour PM2.5 from data.gov.sg on the server (cached 5 minutes, nothing stored). Optional server env `DATA_GOV_SG_API_KEY` raises the rate limit (D-009). Colour scales and the NEA band names are in `lib/layers.ts`.
 - Tiles: `singapore.pmtiles` in the public Supabase bucket `map` (see `scripts/extract-map.sh`).
 - MapLibre's worker is copied to `public/maplibre/` by `scripts/copy-worker.mjs` (runs before `dev` and `build`).
 - Map labels use Noto Sans glyphs in `public/fonts` (SIL OFL 1.1, from protomaps/basemaps-assets).
@@ -11,4 +12,4 @@ Public interface: a map of the four sites that publish an ED waiting time. Next.
 
 Run: `npm install && npm run dev`.
 
-Not built yet: rain and PM2.5 colour layers with legend strip, taxi row in the sheet, the dark map, the usual range.
+Not built yet: the usual range (the sheet says "Not enough data yet") and the dark map. The NEA band limits above "Normal" (55 µg/m³) in `lib/layers.ts` are not yet confirmed against NEA.

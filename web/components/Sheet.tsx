@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { agoText, minutesAgo, type Site } from "@/lib/data";
+import { agoText, durationText, type Site } from "@/lib/data";
 
 const STALE_AFTER_MIN = 30;
+
+function eyebrow(f: Site["facility"]) {
+  return f === "UCC" ? "Urgent care centre" : f === "CHILDREN_ED" ? "Children's emergency department" : "Emergency department";
+}
 
 export default function Sheet({ site, onClose }: { site: Site; onClose: () => void }) {
   const ref = useRef<HTMLElement>(null);
@@ -16,15 +20,15 @@ export default function Sheet({ site, onClose }: { site: Site; onClose: () => vo
   }, [site.code, onClose]);
 
   const ucc = site.facility === "UCC";
-  const stale = site.checkedAt !== null && minutesAgo(site.checkedAt) > STALE_AFTER_MIN;
+  const stale = site.unchangedMin !== null && site.unchangedMin >= STALE_AFTER_MIN;
 
   return (
     <section ref={ref} tabIndex={-1} className="sheet" aria-label={site.name}>
       <div className="grab" aria-hidden="true" />
-      <div className="sheet-head">
+      <div className={"sheet-head" + (site.open ? "" : " gap")}>
         <span className="sign" aria-hidden="true">{ucc ? "UCC" : "ED"}</span>
         <div>
-          <p className="eyebrow">{ucc ? "Urgent care centre" : "Emergency department"}</p>
+          <p className="eyebrow">{eyebrow(site.facility)}</p>
           <h2>{site.name}</h2>
         </div>
         <button className="close" onClick={onClose} aria-label="Close">
@@ -34,34 +38,46 @@ export default function Sheet({ site, onClose }: { site: Site; onClose: () => vo
         </button>
       </div>
 
-      {site.minutes === null ? (
-        <p className="sub">No figure received yet.</p>
+      {!site.open ? (
+        <p className="reason">No open waiting time is published for this hospital.</p>
       ) : (
         <>
-          <div className="big">
-            <b>{Math.round(site.minutes)}</b>
-            <span>minutes</span>
-          </div>
-          <p className="sub">Waiting time as published{ucc ? ". This is not an emergency department." : "."}</p>
+          {site.minutes === null ? (
+            <p className="sub">No figure received yet.</p>
+          ) : (
+            <>
+              <div className="big">
+                <b>{Math.round(site.minutes)}</b>
+                <span>minutes</span>
+              </div>
+              <p className="sub">Waiting time as published{ucc ? ". This is not an emergency department." : "."}</p>
+            </>
+          )}
+
+          <dl>
+            <div>
+              <dt>Last checked</dt>
+              <dd>{site.checkedAt ? agoText(site.checkedAt) : "Not yet"}</dd>
+            </div>
+            <div>
+              <dt>Usual range</dt>
+              <dd>Not enough data yet</dd>
+            </div>
+            {site.taxis !== null && (
+              <div>
+                <dt>Taxis free within 2 km</dt>
+                <dd>{site.taxis}</dd>
+              </div>
+            )}
+            <div>
+              <dt>Source</dt>
+              <dd>data.gov.sg</dd>
+            </div>
+          </dl>
+          {stale && site.unchangedMin !== null && <p className="stale">This figure has not changed for {durationText(site.unchangedMin)}.</p>}
+          <p className="caveat">The source does not say if this is an average or a median. Sites may measure it differently.</p>
         </>
       )}
-
-      <dl>
-        <div>
-          <dt>Last checked</dt>
-          <dd>{site.checkedAt ? agoText(site.checkedAt) : "Not yet"}</dd>
-        </div>
-        <div>
-          <dt>Usual range</dt>
-          <dd>Collecting data</dd>
-        </div>
-        <div>
-          <dt>Source</dt>
-          <dd>data.gov.sg</dd>
-        </div>
-      </dl>
-      {stale && <p className="stale">This figure may be out of date.</p>}
-      <p className="caveat">The source does not say what this figure measures.</p>
     </section>
   );
 }

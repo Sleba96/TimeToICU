@@ -1,61 +1,149 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import { Protocol } from "pmtiles";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { style } from "@/lib/mapStyle";
 import type { Site } from "@/lib/data";
+import { FIELD_COORDS, airBand, airField, nearestRain, rainField, rainText, type LayerData, type LayerKey } from "@/lib/layers";
 
 maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 
 const BOUNDS: maplibregl.LngLatBoundsLike = [[103.55, 1.15], [104.12, 1.5]];
 const SHEET_PAD = 300;
+const NEAR_ZOOM = 12; // from here, rain figures appear beside each site
+const MID_ZOOM = 11; // from here, the air regions are labelled
+
+type Rect = [number, number, number, number]; // left, top, right, bottom
+type Entry = { marker: maplibregl.Marker; root: HTMLElement; tag: HTMLElement; lead: HTMLElement; pill: HTMLElement; site: Site };
 
 function pinLabel(s: Site) {
-  const what = s.facility === "UCC" ? "urgent care centre" : "emergency department";
+  const what = s.facility === "UCC" ? "urgent care centre" : s.facility === "CHILDREN_ED" ? "children's emergency department" : "emergency department";
+  if (!s.open) return `${s.name}, ${what}, no open waiting time published`;
   return `${s.name}, ${what}${s.minutes === null ? ", no figure" : `, ${Math.round(s.minutes)} minutes`}`;
 }
 
-function buildPin(s: Site, onSelect: (code: string) => void) {
-  const el = document.createElement("button");
-  el.className = "pin" + (s.minutes === null ? " nodata" : "");
-  el.setAttribute("aria-label", pinLabel(s));
-  const tag = document.createElement("span");
-  tag.className = "tag";
-  const b = document.createElement("b");
-  b.textContent = s.minutes === null ? "–" : String(Math.round(s.minutes));
-  const i = document.createElement("i");
-  i.textContent = s.facility === "UCC" ? "UCC min" : "min";
-  tag.append(b, i);
-  const stem = Object.assign(document.createElement("span"), { className: "stem" });
-  const dot = Object.assign(document.createElement("span"), { className: "dot" });
-  const nm = Object.assign(document.createElement("span"), { className: "nm", textContent: s.short });
-  el.append(tag, stem, dot, nm);
-  el.addEventListener("click", (e) => {
+function el<K extends keyof HTMLElementTagNameMap>(tag: K, className: string, text?: string) {
+  const e = document.createElement(tag);
+  e.className = className;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+// A site sits on its true coordinate (the dot). Its tag is offset from the dot with a leader line, so tags never overlap (D-014).
+function buildSite(s: Site, onSelect: (code: string) => void): Omit<Entry, "marker"> {
+  const root = el("div", "site" + (s.open ? "" : " gap"));
+  const lead = el("span", "lead");
+  const dot = el("span", "dot");
+  const pill = el("span", "pill");
+  const tag = el("button", "tag");
+  tag.type = "button";
+  tag.setAttribute("aria-label", pinLabel(s));
+  if (s.open) {
+    tag.append(el("b", "", s.minutes === null ? "–" : String(Math.round(s.minutes))), el("i", "", "min"), el("small", "", s.short));
+  } else {
+    tag.append(el("small", "", s.short), el("b", "", "No data"));
+  }
+  tag.addEventListener("click", (e) => {
     e.stopPropagation();
     onSelect(s.code);
   });
-  return el;
+  root.append(lead, dot, pill, tag);
+  return { root, tag, lead, pill, site: s };
+}
+
+function overlap(a: Rect, b: Rect, pad = 3): number {
+  const w = Math.min(a[2], b[2]) - Math.max(a[0], b[0]) + pad;
+  const h = Math.min(a[3], b[3]) - Math.max(a[1], b[1]) + pad;
+  return w > 0 && h > 0 ? w * h : 0;
 }
 
 export default function MapView({
   sites,
   selected,
+  layers,
+  data,
   onSelect,
   onClear,
 }: {
   sites: Site[];
   selected: string | null;
+  layers: Set<LayerKey>;
+  data: LayerData;
   onSelect: (code: string) => void;
   onClear: () => void;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
-  const markers = useRef<Map<string, { marker: maplibregl.Marker; el: HTMLElement }>>(new Map());
+  const entries = useRef<Map<string, Entry>>(new Map());
+  const airMarkers = useRef<maplibregl.Marker[]>([]);
   const callbacks = useRef({ onSelect, onClear });
   callbacks.current = { onSelect, onClear };
+  const live = useRef({ layers, data });
+  live.current = { layers, data };
   const fitted = useRef(false);
+  const [ready, setReady] = useState(false);
+
+  // Place every tag at the first offset that overlaps nothing already placed. Live sites go first, so they keep the best spots.
+  const layout = useRef(() => {});
+  layout.current = () => {
+    const m = map.current;
+    const container = box.current;
+    if (!m || !container) return;
+    const z = m.getZoom();
+    container.classList.toggle("near", z >= NEAR_ZOOM);
+    container.classList.toggle("mid", z >= MID_ZOOM);
+    container.classList.toggle("l-rain", live.current.layers.has("rain"));
+    container.classList.toggle("l-air", live.current.layers.has("air"));
+    const { clientWidth: W, clientHeight: H } = container;
+    const list = [...entries.current.values()].sort((a, b) =>
+      a.site.open === b.site.open ? a.site.code.localeCompare(b.site.code) : a.site.open ? -1 : 1,
+    );
+    const rain = live.current.data.rain;
+    const obstacles: Rect[] = [];
+    const pos = new Map<Entry, { x: number; y: number }>();
+    for (const e of list) {
+      const p = m.project([e.site.lon, e.site.lat]);
+      pos.set(e, { x: p.x, y: p.y });
+      obstacles.push([p.x - 5, p.y - 5, p.x + 5, p.y + 5]);
+      const showPill = live.current.layers.has("rain") && !!rain && z >= NEAR_ZOOM;
+      const text = showPill && rain ? rainText(nearestRain(rain, e.site.lat, e.site.lon)) : "";
+      if (e.pill.textContent !== text) e.pill.textContent = text;
+      if (showPill) obstacles.push([p.x - e.pill.offsetWidth / 2, p.y + 8, p.x + e.pill.offsetWidth / 2, p.y + 8 + e.pill.offsetHeight]);
+    }
+    const placed: Rect[] = [];
+    for (const e of list) {
+      const { x, y } = pos.get(e)!;
+      const w = e.tag.offsetWidth || 70;
+      const h = e.tag.offsetHeight || 44;
+      const side = w / 2 + 12;
+      const offsets: [number, number][] = [];
+      for (const k of [1, 1.8, 2.6]) {
+        offsets.push([0, -22 * k], [side * k, -10 * k], [-side * k, -10 * k], [0, (h + 22) * k], [side * k, (h + 10) * k], [-side * k, (h + 10) * k]);
+      }
+      let best = offsets[0];
+      let bestCost = Infinity;
+      for (const [dx, dy] of offsets) {
+        const r: Rect = [x + dx - w / 2, y + dy - h, x + dx + w / 2, y + dy];
+        let cost = 0;
+        for (const o of obstacles) cost += overlap(r, o);
+        for (const o of placed) cost += overlap(r, o) * 4;
+        if (r[0] < 4 || r[2] > W - 4 || r[1] < 56 || r[3] > H - 4) cost += 5000;
+        if (cost < bestCost) {
+          bestCost = cost;
+          best = [dx, dy];
+          if (cost === 0) break;
+        }
+      }
+      const [dx, dy] = best;
+      placed.push([x + dx - w / 2, y + dy - h, x + dx + w / 2, y + dy]);
+      e.tag.style.left = `${dx}px`;
+      e.tag.style.top = `${dy}px`;
+      e.lead.style.width = `${Math.hypot(dx, dy)}px`;
+      e.lead.style.transform = `rotate(${(Math.atan2(dy, dx) * 180) / Math.PI}deg)`;
+    }
+  };
 
   useEffect(() => {
     if (!box.current) return;
@@ -77,46 +165,57 @@ export default function MapView({
     m.touchZoomRotate.disableRotation();
     m.addControl(new maplibregl.ScaleControl({ unit: "metric", maxWidth: 80 }), "bottom-left");
     m.on("click", () => callbacks.current.onClear());
+    m.on("move", () => layout.current());
+    m.on("resize", () => layout.current());
+    m.on("load", () => setReady(true));
     map.current = m;
-    const store = markers.current;
+    const store = entries.current;
     return () => {
       store.forEach(({ marker }) => marker.remove());
       store.clear();
+      airMarkers.current.forEach((a) => a.remove());
+      airMarkers.current = [];
       m.remove();
       map.current = null;
       fitted.current = false;
+      setReady(false);
       maplibregl.removeProtocol("pmtiles");
     };
   }, []);
 
+  // Sites: one marker each, with or without a figure.
   useEffect(() => {
     const m = map.current;
     if (!m) return;
     const seen = new Set<string>();
     for (const s of sites) {
       seen.add(s.code);
-      const old = markers.current.get(s.code);
-      if (old) old.marker.remove();
-      const el = buildPin(s, (c) => callbacks.current.onSelect(c));
-      const marker = new maplibregl.Marker({ element: el, anchor: "bottom", offset: [0, 4] }).setLngLat([s.lon, s.lat]).addTo(m);
-      markers.current.set(s.code, { marker, el });
+      entries.current.get(s.code)?.marker.remove();
+      const built = buildSite(s, (c) => callbacks.current.onSelect(c));
+      const marker = new maplibregl.Marker({ element: built.root, anchor: "center" }).setLngLat([s.lon, s.lat]).addTo(m);
+      entries.current.set(s.code, { ...built, marker });
     }
-    markers.current.forEach((v, code) => {
+    entries.current.forEach((v, code) => {
       if (!seen.has(code)) {
         v.marker.remove();
-        markers.current.delete(code);
+        entries.current.delete(code);
       }
     });
     if (!fitted.current && sites.length > 0) {
       fitted.current = true;
       const b = new maplibregl.LngLatBounds();
       sites.forEach((s) => b.extend([s.lon, s.lat]));
-      m.fitBounds(b, { padding: { top: 90, bottom: 90, left: 70, right: 70 }, maxZoom: 13, duration: 0 });
+      m.fitBounds(b, { padding: { top: 110, bottom: 70, left: 60, right: 60 }, maxZoom: 13, duration: 0 });
     }
-  }, [sites]);
+    entries.current.forEach(({ root, site }, code) => {
+      root.classList.toggle("sel", code === selected);
+      root.style.zIndex = code === selected ? "3" : site.open ? "2" : "1";
+    });
+    layout.current();
+  }, [sites, selected]);
 
+  // Selecting a site moves the map so the site sits above the sheet.
   useEffect(() => {
-    markers.current.forEach(({ el }, code) => el.classList.toggle("sel", code === selected));
     const m = map.current;
     const s = sites.find((x) => x.code === selected);
     if (m && s) {
@@ -125,6 +224,50 @@ export default function MapView({
       m.easeTo({ padding: { bottom: 0 }, duration: 200 });
     }
   }, [selected, sites]);
+
+  // Colour layers: soft images under the water and coast, so only land is tinted.
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready) return;
+    const images: [LayerKey, string | null][] = [
+      ["air", data.air ? airField(data.air) : null],
+      ["rain", data.rain ? rainField(data.rain) : null],
+    ];
+    for (const [key, url] of images) {
+      const src = m.getSource(key) as maplibregl.ImageSource | undefined;
+      if (url) {
+        if (src) src.updateImage({ url, coordinates: FIELD_COORDS });
+        else {
+          m.addSource(key, { type: "image", url, coordinates: FIELD_COORDS });
+          m.addLayer(
+            {
+              id: key,
+              type: "raster",
+              source: key,
+              paint: { "raster-opacity": ["interpolate", ["linear"], ["zoom"], 11, 1, 14, 0.55], "raster-fade-duration": 0 },
+            },
+            "water",
+          );
+        }
+      }
+      if (m.getLayer(key)) m.setLayoutProperty(key, "visibility", layers.has(key) && url ? "visible" : "none");
+    }
+    layout.current();
+  }, [ready, data, layers]);
+
+  // Air region labels: shown from a closer zoom, with the NEA band name in text.
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    airMarkers.current.forEach((a) => a.remove());
+    airMarkers.current = [];
+    if (!data.air) return;
+    for (const r of data.air.regions) {
+      const label = el("div", "airlbl");
+      label.append(el("span", "", r.name[0].toUpperCase() + r.name.slice(1)), el("b", "", `${airBand(r.v)} · ${Math.round(r.v)} µg/m³`));
+      airMarkers.current.push(new maplibregl.Marker({ element: label, anchor: "center" }).setLngLat([r.lon, r.lat]).addTo(m));
+    }
+  }, [data.air, ready]);
 
   return (
     <>

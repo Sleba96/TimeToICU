@@ -44,30 +44,54 @@ a { color: inherit; }
 .stage { position: relative; flex: 1; min-height: 0; background: var(--sea); }
 .stage > .map.maplibregl-map, .stage > .map { position: absolute; inset: 0; }
 
-/* Pins: dark sign-panel tag, white figure, stem and dot on the true coordinate */
-.pin {
-  appearance: none; background: none; border: 0; padding: 0; margin: 0; cursor: pointer;
-  display: flex; flex-direction: column; align-items: center;
-  -webkit-tap-highlight-color: transparent;
+/* Sites (D-014): the dot sits on the true coordinate; the tag is offset from it with a leader line, placed by MapView */
+.site { position: absolute; width: 0; height: 0; }
+.site .dot { position: absolute; left: -4px; top: -4px; width: 8px; height: 8px; border-radius: 50%; background: #14181f; box-shadow: 0 0 0 2px #fff; }
+.site .lead { position: absolute; left: 0; top: -1px; height: 2px; background: #14181f; transform-origin: 0 50%; pointer-events: none; }
+.site .tag {
+  appearance: none; cursor: pointer; position: absolute; transform: translate(-50%, -100%);
+  background: #14181f; color: #fff; border: 2px solid #fff; border-radius: 3px;
+  padding: 5px 10px 4px; text-align: center; min-width: 54px; min-height: 38px;
+  box-shadow: 0 0 0 1px #14181f; -webkit-tap-highlight-color: transparent; white-space: nowrap;
 }
-.pin .tag {
-  background: var(--ink-fixed, #14181f); color: #fff; border: 2px solid #fff; border-radius: 3px;
-  padding: 5px 10px 4px; text-align: center; min-width: 54px; min-height: 40px;
-  box-shadow: 0 0 0 1px #14181f;
+.site .tag b { display: block; font-weight: 800; font-size: 24px; line-height: 1; }
+.site .tag i { display: block; font-style: normal; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin-top: 2px; }
+.site .tag small { display: block; font-size: 12px; font-weight: 700; line-height: 1.25; margin-top: 2px; }
+/* Sites with no open data are quieter: outlined, muted, never coloured by wait */
+.site.gap .tag { background: #fff; color: #4b5563; border: 1.5px solid #4b5563; box-shadow: none; padding: 4px 8px; min-height: 38px; }
+.site.gap .tag small { color: #14181f; font-weight: 800; margin: 0; }
+.site.gap .tag b { font-size: 12px; font-weight: 700; line-height: 1.25; }
+.site.gap .dot, .site.gap .lead { background: #4b5563; }
+.site.sel .tag { background: #c8102e; color: #fff; border-color: #c8102e; box-shadow: none; }
+.site.sel .tag small { color: #fff; }
+.site.sel .dot, .site.sel .lead { background: #c8102e; }
+/* Layer figures: round, light, muted; never the dark sign panel */
+.site .pill {
+  display: none; position: absolute; left: 0; top: 8px; transform: translateX(-50%); white-space: nowrap; pointer-events: none;
+  background: rgba(255,255,255,.94); border: 1px solid #4b5563; border-radius: 999px; padding: 2px 8px;
+  font-size: 11px; font-weight: 700; line-height: 1.3; color: #4b5563;
 }
-.pin .tag b { display: block; font-weight: 800; font-size: 24px; line-height: 1; }
-.pin .tag i { display: block; font-style: normal; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin-top: 2px; }
-.pin .stem { width: 2px; height: 9px; background: #14181f; }
-.pin .dot { width: 8px; height: 8px; border-radius: 50%; background: #14181f; box-shadow: 0 0 0 2px #fff; margin-bottom: -4px; }
-.pin .nm {
-  position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%);
-  white-space: nowrap; font-size: 12px; font-weight: 700; color: #14181f;
-  text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff, 0 0 2px #fff;
-  pointer-events: none;
+.map.near.l-rain .site .pill:not(:empty) { display: block; }
+.airlbl {
+  display: none; pointer-events: none; text-align: center; white-space: nowrap;
+  background: rgba(255,255,255,.94); border: 1px dashed #4b5563; border-radius: 10px; padding: 3px 8px;
+  font-size: 11px; font-weight: 600; line-height: 1.25; color: #14181f;
 }
-.pin.sel .tag { background: #c8102e; box-shadow: 0 0 0 1px #c8102e; }
-.pin.sel .stem, .pin.sel .dot { background: #c8102e; }
-.pin.nodata .tag { background: #fff; color: #14181f; border-color: #14181f; box-shadow: none; }
+.airlbl b { display: block; font-weight: 800; }
+.map.mid.l-air .airlbl { display: block; }
+
+/* Layer chips and legend strip (D-015) */
+.chips { position: absolute; left: 12px; top: 12px; z-index: 3; display: flex; gap: 6px; }
+.chip {
+  min-height: 38px; padding: 0 14px; border-radius: 3px; background: #fff; color: #14181f; border: 1px solid #b9c9d5;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: #14181f; color: #fff; border-color: #14181f; }
+.legend { flex: none; background: var(--paper); color: var(--ink); border-top: 1px solid var(--rule); padding: 6px 12px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+.legend-row { display: flex; align-items: center; gap: 8px; }
+.legend-row b { flex: none; width: 112px; font-weight: 800; }
+.legend-row span { flex: none; color: var(--muted); font-weight: 700; white-space: nowrap; }
+.legend-row i { flex: 1; height: 10px; min-width: 40px; border-radius: 2px; border: 1px solid var(--muted); }
 
 /* Map furniture */
 .north {
@@ -111,6 +135,8 @@ dl { margin: 0; border-top: 1px solid var(--rule); font-size: 14px; }
 dl div { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
 dt { color: var(--muted); }
 dd { margin: 0; font-weight: 700; text-align: right; }
+.reason { margin: 14px 0 6px; font-size: 16px; font-weight: 700; line-height: 1.4; }
+.sheet-head.gap .sign { background: #fff; color: #4b5563; border: 1.5px solid #4b5563; }
 .caveat { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
 .stale { margin: 8px 0 0; font-size: 13px; font-weight: 700; }
 
@@ -127,7 +153,7 @@ dd { margin: 0; font-weight: 700; text-align: right; }
 
 /* Status line over the map */
 .status {
-  position: absolute; left: 12px; top: 12px; z-index: 3; max-width: calc(100% - 72px);
+  position: absolute; left: 12px; top: 62px; z-index: 3; max-width: calc(100% - 72px);
   background: #fff; color: #14181f; border: 1px solid #b9c9d5; border-radius: 3px; padding: 8px 10px; font-size: 13px; font-weight: 600;
 }
 
