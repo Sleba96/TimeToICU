@@ -12,6 +12,7 @@ import {
   parseEdWaits,
   parseHolidays,
   parseIcuEpiweek,
+  parsePm25Hourly,
   parsePsi,
   parseRainfall,
   parseTaxi,
@@ -156,4 +157,12 @@ test("epiWeekStart: Sunday start, week 1 holds 4 January", () => {
   assert.equal(epiWeekStart(2023, 1), "2023-01-01");
   assert.equal(epiWeekStart(2024, 1), "2023-12-31");
   assert.equal(epiWeekStart(2024, 8), "2024-02-18");
+});
+
+test("PM2.5 hourly: five regions, 1-hour metric, source timestamp kept", () => {
+  const p = parsePm25Hourly(fixture("pm25.json"));
+  assert.deepEqual(p.issues, []);
+  assert.equal(p.observations.length, 5);
+  assert.ok(p.observations.every((o) => o.metric === "pm25_1h" && o.location.startsWith("psi:") && o.observed_at?.endsWith("+08:00")));
+  assert.equal(parsePm25Hourly(JSON.stringify({ code: 0, data: { items: [{ timestamp: "x", readings: {} }] } })).issues[0].kind, "missing_metric");
 });

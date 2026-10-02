@@ -1,7 +1,7 @@
 // Source definitions and parsers. Pure functions: no Deno or Supabase globals, so they run
 // under the Edge runtime and under `node --test` against the recorded fixtures in tests/fixtures.
 
-export const COLLECTOR_VERSION = "0.2.0";
+export const COLLECTOR_VERSION = "0.3.0";
 
 export interface Hospital {
   code: string;
@@ -241,6 +241,27 @@ export function parsePsi(body: string): Parsed {
 }
 
 // ---------------------------------------------------------------------------
+// PM2.5 1-hour reading by region (separate data.gov.sg endpoint, reacts faster than the 24-hour average).
+// ---------------------------------------------------------------------------
+
+export function parsePm25Hourly(body: string): Parsed {
+  const out = empty();
+  const d = JSON.parse(body);
+  const item = d?.data?.items?.[0];
+  if (d?.code !== 0 || !item?.timestamp || !item?.readings) throw new Error("pm25_hourly: unexpected response shape");
+  const byRegion = item.readings.pm25_one_hourly;
+  if (!byRegion) {
+    out.issues.push({ kind: "missing_metric", detail: "pm25_one_hourly" });
+    return out;
+  }
+  for (const [region, value] of Object.entries(byRegion)) {
+    if (typeof value !== "number") continue;
+    out.observations.push({ metric: "pm25_1h", location: `psi:${region}`, observed_at: item.timestamp, value, value_text: null });
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // Taxi availability (LTA via data.gov.sg v1). Aggregated: raw coordinates are not stored per run.
 // ---------------------------------------------------------------------------
 
@@ -386,6 +407,12 @@ export const SOURCES: Record<string, SourceDef> = {
     cadenceMinutes: 60,
     fetch: simpleFetch("https://api-open.data.gov.sg/v2/real-time/api/psi"),
     parse: (b) => parsePsi(b),
+  },
+  pm25_hourly: {
+    id: "pm25_hourly",
+    cadenceMinutes: 60,
+    fetch: simpleFetch("https://api-open.data.gov.sg/v2/real-time/api/pm25"),
+    parse: (b) => parsePm25Hourly(b),
   },
   taxi: {
     id: "taxi",

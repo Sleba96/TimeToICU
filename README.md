@@ -9,7 +9,7 @@ Project name: `sg-health-monitor` (final). The GitHub repository is still called
 ## What it does today
 
 - Collects ED waiting times for the four sites that publish open data (TTSH, KTPH, Woodlands Health, Alexandra Hospital Urgent Care Centre) every 5 minutes.
-- Collects context for later research: rainfall, air temperature, PSI and PM2.5, taxi availability near each hospital, public holidays, and the national ICU utilisation series by epi-week (2023-09 to 2024-08).
+- Collects context for later research: rainfall, air temperature, PSI, 24-hour and 1-hour PM2.5, taxi availability near each hospital, public holidays, and the national ICU utilisation series by epi-week (2023-09 to 2024-08).
 - Logs every run, keeps raw payloads under a documented retention policy, and flags schema changes and unknown labels instead of guessing.
 
 The web interface is not built yet. Design starts from a written brief, not a template.
