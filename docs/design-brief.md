@@ -14,7 +14,14 @@ Built together with the author, one decision at a time. Decisions that shape sco
 - **Map layers (v1):** rain, PM2.5, taxi availability, toggleable.
 - **995 reminder:** footer and about page only.
 - **Later:** itinerary from the visitor's location to a site they choose; taxi features. Never a combined "best option".
-- **Map style:** undecided; to be shown as options on a first screen.
+- **Visual direction (chosen 2026-10-02):** "Wayfinding". Subtle Singapore signage and clean public-site conventions, serious and precise. Readability comes first.
+  - Type: Noto Sans (also gives matching Chinese and Tamil families for later translation). Smallest text 11px labels, 12px body. Tap targets at least 38px.
+  - Colour: near-white paper `#ffffff`, ink `#14181f`, muted `#4b5563`, flag red `#c8102e`. Red is used only for the selected site and the 995 marker. Contrast: ink 17.8:1, muted 7.6:1, white on red 5.9:1.
+  - Pins: dark sign-panel tag with a white figure, squarer corners (3px), a stem and dot on the true coordinate. Selected pin is red.
+  - Sheet: "ED" pictogram square (UCC for Alexandra), figure at 48px, rows for age, usual range and source, then the definition-gap line.
+  - Nothing imitates an official banner, crest or logo.
+- **Map tint (chosen):** "Water". White land, soft blue sea `#cfe2ef`, pale green parks `#d6e8cf`, coast `#7f9bb0`, grid `#bcd3e2`. Reference: `docs/design/map-tints-mockup.html` (map 1).
+- **Dark mode:** user choice, following the device setting by default. Dark map to be designed from the Water tint.
 
 ## Constraints from the data (see `sources.md`)
 
@@ -24,4 +31,4 @@ Built together with the author, one decision at a time. Decisions that shape sco
 
 ## Still open
 
-Typography, colour, voice and microcopy, pin and layer visual design, how gaps look, map provider and tiles, mobile behaviour of layer toggles.
+Dark version of the Water map, voice and microcopy, how gaps (sites without open data) look, layer visuals for rain, PM2.5 and taxis, map provider and tiles, mobile behaviour of the layer chips.
