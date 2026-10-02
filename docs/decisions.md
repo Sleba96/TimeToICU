@@ -2,6 +2,14 @@
 
 Decisions that shape scope, data or governance. Newest first. Each entry says what was decided, why, and what would reopen it.
 
+## D-010 · 2026-10-02 · ICU epi-week series: assumed week convention, label kept
+
+**Decision.** `icu_epiweek` is stored as three national metrics (`icu_beds_covid`, `icu_beds_noncovid`, `icu_beds_empty`) at location `SG`. Observation time is the Sunday that starts the epi-week, assuming MMWR numbering (week 1 is the first Sunday-to-Saturday week with four days in the year). The original label, for example `2023-09`, is stored in `value_text`.
+
+**Why.** The publisher states neither the unit nor the week-numbering rule. Sunday-to-Saturday weeks are documented for Singapore's infectious-disease bulletin; the week-1 rule is an assumption. Keeping the label means no information is lost if the assumption proves wrong.
+
+**Reopen if** the publisher documents its convention, or the dates look shifted against other series.
+
 ## D-009 · 2026-10-02 · Back off on data.gov.sg rate limits
 
 **Decision.** The collector retries HTTP 429 up to three times (2 s, 5 s, 10 s, or `Retry-After`), pauses 1.5 s between holiday datasets, and sends an `x-api-key` header when the `DATA_GOV_SG_API_KEY` function secret is set.

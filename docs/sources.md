@@ -10,7 +10,7 @@ Verified by direct requests on 2026-10-02. Fixtures in `tests/fixtures/` are the
 | PSI / PM2.5 | `api-open.data.gov.sg/v2/real-time/api/psi` | 5 regions, 12 readings | Yes (hourly) | Collected hourly |
 | Taxi availability | `api.data.gov.sg/v1/transport/taxi-availability` | GeoJSON MultiPoint, ~1,800 points, 43 KB | Yes | Collected every 15 min, aggregated |
 | Public holidays | `api-production.data.gov.sg/v2/public/api/collections/691/metadata` then each child dataset | `date`, `day`, `holiday` | n/a | Collected daily |
-| ICU utilisation by epi-week | datastore `d_ac42b0ea4ae0528bc9dbef90f0658f2b` | `epi_year`, `epi_week`, `status` (COVID / Non-COVID / Empty), `count` | Epi-week | Static, backfill later |
+| ICU utilisation by epi-week | datastore `d_ac42b0ea4ae0528bc9dbef90f0658f2b` | `epi_year`, `epi_week`, `status` (COVID / Non-COVID / Empty), `count` | Epi-week | Collected daily; static series, 156 rows covering epi-weeks 2023-09 to 2024-08 |
 | Admissions 1984–2020 | datastore `d_a5267c58f60b20f8e04576261abfac93` | Annual, 296 rows, many nulls | Year | Context only |
 | Beds in inpatient facilities | datastore `d_0f8f02e6e821fc88aa96442656b69241` | Annual series | Year | Context only |
 | Hong Kong A&E | `api.data.gov.hk/v1/historical-archive/...` for `ha.org.hk/opendata/aed/aedwtdata2-en.json` | Per hospital: `t1wt`, `t2wt`, `t3p50`, `t3p95`, `t45p50`, `t45p95` as text ("1.5 hours", "less than 15 minutes") | `updateTime` | Benchmark; archive from 2025-10-13 at 15 min |

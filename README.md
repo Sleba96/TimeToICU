@@ -1,15 +1,15 @@
-# Singapore ED queue monitor
+# sg-health-monitor
 
 **Not for emergency decisions. In an emergency, call 995.**
 
 A public, documented record of emergency-department queues in Singapore, built only from open data. It collects published waiting times every few minutes, keeps the raw responses, and shows what is and is not openly published.
 
-Working name: `sg-queue-monitor`. The repository is still called TimeToICU; the final name is an open decision.
+Project name: `sg-health-monitor` (final). The GitHub repository is still called TimeToICU and the Supabase project `sg-queue-monitor`; both are display names only.
 
 ## What it does today
 
 - Collects ED waiting times for the four sites that publish open data (TTSH, KTPH, Woodlands Health, Alexandra Hospital Urgent Care Centre) every 5 minutes.
-- Collects context for later research: rainfall, air temperature, PSI and PM2.5, taxi availability near each hospital, public holidays.
+- Collects context for later research: rainfall, air temperature, PSI and PM2.5, taxi availability near each hospital, public holidays, and the national ICU utilisation series by epi-week (2023-09 to 2024-08).
 - Logs every run, keeps raw payloads under a documented retention policy, and flags schema changes and unknown labels instead of guessing.
 
 The web interface is not built yet. Design starts from a written brief, not a template.

@@ -2,7 +2,7 @@
 
 ## Supabase
 
-Project `sg-queue-monitor`, region `ap-southeast-1` (Singapore).
+Supabase project `sg-queue-monitor` (display name; the product is `sg-health-monitor`), region `ap-southeast-1` (Singapore).
 
 1. Apply `supabase/migrations/*.sql` in order (`supabase db push`, or the SQL editor).
 2. Deploy the Edge Function with JWT verification off; it checks its own token:

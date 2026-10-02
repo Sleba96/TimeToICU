@@ -1,7 +1,7 @@
 // Source definitions and parsers. Pure functions: no Deno or Supabase globals, so they run
 // under the Edge runtime and under `node --test` against the recorded fixtures in tests/fixtures.
 
-export const COLLECTOR_VERSION = "0.1.1";
+export const COLLECTOR_VERSION = "0.2.0";
 
 export interface Hospital {
   code: string;
@@ -319,6 +319,53 @@ export function parseHolidays(body: string): Parsed {
 }
 
 // ---------------------------------------------------------------------------
+// ICU utilisation by epi-week (static MOH series on data.gov.sg)
+
+const ICU_URL = "https://data.gov.sg/api/action/datastore_search?limit=500&resource_id=d_ac42b0ea4ae0528bc9dbef90f0658f2b";
+const ICU_METRICS: Record<string, string> = {
+  "COVID": "icu_beds_covid",
+  "Non-COVID": "icu_beds_noncovid",
+  "Empty": "icu_beds_empty",
+};
+
+/**
+ * First day (Sunday) of an epi-week, assuming the MMWR convention: weeks run Sunday to Saturday and
+ * week 1 is the first week with at least four days in the year. The publisher does not state its
+ * convention (see D-010); the original label is always kept in value_text.
+ */
+export function epiWeekStart(year: number, week: number): string {
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const week1 = jan4.getTime() - jan4.getUTCDay() * 86_400_000;
+  return new Date(week1 + (week - 1) * 7 * 86_400_000).toISOString().slice(0, 10);
+}
+
+export function parseIcuEpiweek(body: string): Parsed {
+  const out = empty();
+  const records = JSON.parse(body)?.result?.records;
+  if (!Array.isArray(records)) {
+    out.issues.push({ kind: "schema_change", detail: "result.records missing" });
+    return out;
+  }
+  for (const rec of records) {
+    const metric = ICU_METRICS[String(rec.status)];
+    const m = /^(\d{4})-(\d{2})$/.exec(String(rec.epi_week ?? ""));
+    const value = Number(rec.count);
+    if (!metric || !m || rec.count === null || rec.count === "" || !Number.isFinite(value) || value < 0) {
+      out.issues.push({ kind: "unparsable_record", detail: rec });
+      continue;
+    }
+    out.observations.push({
+      metric,
+      location: "SG",
+      observed_at: `${epiWeekStart(Number(m[1]), Number(m[2]))}T00:00:00+08:00`,
+      value,
+      value_text: String(rec.epi_week),
+    });
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 
 export const SOURCES: Record<string, SourceDef> = {
   ed_waits: { id: "ed_waits", cadenceMinutes: 5, fetch: simpleFetch(ED_WAITS_URL), parse: (b) => parseEdWaits(b) },
@@ -345,6 +392,12 @@ export const SOURCES: Record<string, SourceDef> = {
     cadenceMinutes: 15,
     fetch: simpleFetch("https://api.data.gov.sg/v1/transport/taxi-availability"),
     parse: parseTaxi,
+  },
+  icu_epiweek: {
+    id: "icu_epiweek",
+    cadenceMinutes: 1440,
+    fetch: simpleFetch(ICU_URL),
+    parse: (b) => parseIcuEpiweek(b),
   },
   holidays: { id: "holidays", cadenceMinutes: 1440, fetch: fetchHolidays, parse: (b) => parseHolidays(b) },
 };

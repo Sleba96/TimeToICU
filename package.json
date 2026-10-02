@@ -1,5 +1,5 @@
 {
-  "name": "sg-queue-monitor",
+  "name": "sg-health-monitor",
   "private": true,
   "type": "module",
   "scripts": {

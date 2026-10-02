@@ -5,11 +5,13 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   distanceKm,
+  epiWeekStart,
   type Fetched,
   type Hospital,
   parseAirTemperature,
   parseEdWaits,
   parseHolidays,
+  parseIcuEpiweek,
   parsePsi,
   parseRainfall,
   parseTaxi,
@@ -124,4 +126,34 @@ test("helpers: slot flooring, distance, hashing", async () => {
   const km = distanceKm(1.3213686, 103.845694, 1.424081, 103.838579);
   assert.ok(km > 11 && km < 12.5, `got ${km}`);
   assert.equal(await sha256Hex("abc"), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+});
+
+test("ICU epi-week: 52 weeks x 3 statuses, national location, label kept", () => {
+  const p = parseIcuEpiweek(fixture("icu_epiweek.json"));
+  assert.deepEqual(p.issues, []);
+  assert.equal(p.observations.length, 156);
+  assert.ok(p.observations.every((o) => o.location === "SG" && o.value !== null && o.value >= 0));
+  const first = p.observations[0];
+  assert.deepEqual([first.metric, first.value, first.value_text], ["icu_beds_covid", 2.7, "2023-09"]);
+  assert.equal(first.observed_at, "2023-02-26T00:00:00+08:00");
+  assert.equal(new Set(p.observations.map((o) => o.metric)).size, 3);
+});
+
+test("ICU epi-week: bad rows are flagged, not guessed", () => {
+  const body = JSON.stringify({ result: { records: [
+    { epi_week: "2024-01", status: "Other", count: "1.0" },
+    { epi_week: "2024-1", status: "COVID", count: "1.0" },
+    { epi_week: "2024-01", status: "COVID", count: null },
+    { epi_week: "2024-01", status: "COVID", count: "4.5" },
+  ] } });
+  const p = parseIcuEpiweek(body);
+  assert.equal(p.observations.length, 1);
+  assert.equal(p.issues.length, 3);
+  assert.equal(parseIcuEpiweek("{}").issues[0].kind, "schema_change");
+});
+
+test("epiWeekStart: Sunday start, week 1 holds 4 January", () => {
+  assert.equal(epiWeekStart(2023, 1), "2023-01-01");
+  assert.equal(epiWeekStart(2024, 1), "2023-12-31");
+  assert.equal(epiWeekStart(2024, 8), "2024-02-18");
 });
