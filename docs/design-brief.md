@@ -22,6 +22,7 @@ Built together with the author, one decision at a time. Decisions that shape sco
   - Nothing imitates an official banner, crest or logo.
 - **Map tint (chosen):** "Water". White land, soft blue sea `#cfe2ef`, pale green parks `#d6e8cf`, coast `#7f9bb0`, grid `#bcd3e2`. Reference: `docs/design/map-tints-mockup.html` (map 1).
 - **Sites with no open data (chosen 2026-10-02, D-014):** outlined tag, muted, showing the name and "No data". Quieter than live pins, same tap target, tappable. Overlapping tags are offset from the true spot with a leader line. Sheet: name and "No open waiting time is published for this hospital."; KKH is labelled "Children's emergency department". Selecting a site pans the map so it sits above the sheet. Reference: `docs/design/gap-pins-mockup.html`.
+- **Layers (chosen 2026-10-02, D-015, provisional):** two chips, Rain and Air quality, toggle colour on the map; one hue per layer (rain blue, air violet), light for less and dark for more, never red or green. Fixed scales, with a legend strip above the footer, one row per active layer, writing the lowest and highest value. Zoomed in, colour is fainter and figures appear beside each site. Taxis are not a layer: "Taxis free within 2 km" is a row in each hospital's sheet. References: `docs/design/layer-colours-mockup.html`, `docs/design/legend-placement-mockup.html` (option A).
 - **Dark mode:** user choice, following the device setting by default. Dark map to be designed from the Water tint.
 
 ## Constraints from the data (see `sources.md`)
@@ -32,4 +33,4 @@ Built together with the author, one decision at a time. Decisions that shape sco
 
 ## Still open
 
-Dark version of the Water map, voice and microcopy, layer visuals for rain, PM2.5 and taxis, map provider and tiles, mobile behaviour of the layer chips.
+Dark version of the Water map (deferred), voice and microcopy. Settled since: gap sites (D-014), layers (D-015), map provider (D-013).
