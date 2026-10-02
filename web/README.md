@@ -1,6 +1,6 @@
 # web
 
-Public interface: a map of the public emergency sites. Four publish an ED waiting time; six show as "No data" (D-014). Rain and air quality can be shown as colour (D-015). Next.js, MapLibre GL, PMTiles.
+Public interface: a map of the public emergency sites. All ten show as "No data": six publish no feed (D-014), and the four that do are hidden because the feed looks retired (D-017, switch `ED_FEED_PAUSED` in `lib/data.ts`). Rain and air quality can be shown as colour (D-015). Next.js, MapLibre GL, PMTiles.
 
 - Look and rules: `docs/design-brief.md`, `docs/decisions.md` (D-012, D-013).
 - Env (see `.env.example`): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Optional `NEXT_PUBLIC_MAP_URL` overrides the tile file.

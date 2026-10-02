@@ -2,6 +2,14 @@
 
 Decisions that shape scope, data or governance. Newest first. Each entry says what was decided, why, and what would reopen it.
 
+## D-017 · 2026-10-02 · The four ED figures are hidden until a current source is found
+
+**Decision.** All ten public sites show as quiet "No data" tags (D-014). For the four sites that have a feed (TTSH, KTPH, Woodlands, Alexandra UCC), the sheet says "The published figure for this site looks out of date, so it is not shown." and the About page explains why. The collector keeps running and keeps its history. One switch, `ED_FEED_PAUSED` in `web/lib/data.ts`, shows the figures again.
+
+**Why.** D-016: the feed has not changed since collection began, its dataset looks retired, and at Alexandra it contradicts the NUHS page (240 minutes against under 1 hour). A large figure reads as true to someone worried and on a phone. Decided by the author on 2026-10-02 after being offered the options to hide, to show with a warning, or to do nothing.
+
+**Reopen if** a current source is found, or if the feed starts changing. Next steps are in `docs/data-candidates.md`.
+
 ## D-016 · 2026-10-02 · Finding: the ED feed has not changed since collection began (provisional)
 
 **Finding.** From the first collection (2026-10-02 04:10 UTC) to 09:45 UTC, each of the four sites returned the same figure on all 68 polls: TTSH 61, KTPH 64, Woodlands 17, Alexandra UCC 240. The upstream datastore, called directly at the end of that window, returned the same four numbers, so this is not a collector fault. The dataset is titled "ED Waiting Times (2025)", a search result shows it last updated on 19 August 2025, the data.gov.sg dataset page says the dataset was not found or unpublished, and the v2 metadata endpoint answers that the dataset id does not exist, while the datastore endpoint still serves the four rows.

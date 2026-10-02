@@ -2,12 +2,23 @@
 
 export type Facility = "ED" | "UCC" | "CHILDREN_ED";
 
+// D-017: the ED waiting-time feed looks retired (D-016), so its four figures are not shown. Set to false to show them again.
+export const ED_FEED_PAUSED = true;
+
+// live: a current figure is shown. paused: the site has a feed that looks out of date. none: no open feed exists (D-003).
+export type Status = "live" | "paused" | "none";
+
+export function statusOf(published: boolean, paused: boolean = ED_FEED_PAUSED): Status {
+  return !published ? "none" : paused ? "paused" : "live";
+}
+
 export type Site = {
   code: string;
   name: string;
   short: string;
   facility: Facility;
-  open: boolean; // false: the hospital publishes no waiting time as open data (D-003, D-014)
+  status: Status;
+  open: boolean; // true only when a current figure is shown; every other site is a quiet "No data" tag (D-014, D-017)
   lat: number;
   lon: number;
   minutes: number | null;
@@ -73,13 +84,15 @@ export async function loadSites(): Promise<Site[]> {
   return hospitals
     .map((h): Site => {
       const code = h.location.code;
-      const open = h.open_data_status === "published";
+      const status = statusOf(h.open_data_status === "published");
+      const open = status === "live";
       const o = open ? wait.get(code) : undefined;
       return {
         code,
         name: h.location.name,
         short: SHORT[code] ?? code,
         facility: facility(h.facility_type),
+        status,
         open,
         lat: h.location.lat,
         lon: h.location.lon,

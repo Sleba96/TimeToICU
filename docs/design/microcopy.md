@@ -53,6 +53,12 @@ English only for v1. Tone: neutral and sober, short sentences, no advice, no ran
 | Caveat | The source does not say if this is an average or a median. Sites may measure it differently. |
 | Close button (label for screen readers) | Close |
 
+## Sheet, site whose figure is hidden (D-017)
+
+| Where | Text |
+| --- | --- |
+| Body | The published figure for this site looks out of date, so it is not shown. |
+
 ## Sheet, site with no open data
 
 | Where | Text |

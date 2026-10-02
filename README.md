@@ -14,6 +14,8 @@ Project name: `sg-health-monitor` (final). The GitHub repository is still called
 
 The first web screen (map, pins, bottom sheet) is in `web/`; see `web/README.md`. Design follows `docs/design-brief.md`.
 
+**Status (2026-10-02):** the ED waiting-time feed looks retired and its figures are hidden on the site (D-016, D-017). Research on other data is in `docs/data-candidates.md`.
+
 ## What it will not do
 
 - Recommend where or when to go, triage, or give clinical advice.

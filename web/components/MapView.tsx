@@ -20,7 +20,7 @@ type Entry = { marker: maplibregl.Marker; root: HTMLElement; tag: HTMLElement; l
 
 function pinLabel(s: Site) {
   const what = s.facility === "UCC" ? "urgent care centre" : s.facility === "CHILDREN_ED" ? "children's emergency department" : "emergency department";
-  if (!s.open) return `${s.name}, ${what}, no open waiting time published`;
+  if (!s.open) return `${s.name}, ${what}, ${s.status === "paused" ? "waiting time not current, not shown" : "no open waiting time published"}`;
   return `${s.name}, ${what}${s.minutes === null ? ", no figure" : `, ${Math.round(s.minutes)} minutes`}`;
 }
 

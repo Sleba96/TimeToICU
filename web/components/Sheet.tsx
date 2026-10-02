@@ -39,7 +39,11 @@ export default function Sheet({ site, onClose }: { site: Site; onClose: () => vo
       </div>
 
       {!site.open ? (
-        <p className="reason">No open waiting time is published for this hospital.</p>
+        <p className="reason">
+          {site.status === "paused"
+            ? "The published figure for this site looks out of date, so it is not shown."
+            : "No open waiting time is published for this hospital."}
+        </p>
       ) : (
         <>
           {site.minutes === null ? (

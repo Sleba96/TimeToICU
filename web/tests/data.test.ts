@@ -40,3 +40,12 @@ test("duration text", () => {
   assert.equal(durationText(60), "1 hour");
   assert.equal(durationText(295), "4 hours 55 minutes");
 });
+
+test("the ED feed pause hides figures for sites that have a feed, and sites with none stay none", async () => {
+  const { statusOf, ED_FEED_PAUSED } = await import("../lib/data.ts");
+  assert.equal(ED_FEED_PAUSED, true);
+  assert.equal(statusOf(true), "paused");
+  assert.equal(statusOf(false), "none");
+  assert.equal(statusOf(true, false), "live");
+  assert.equal(statusOf(false, false), "none");
+});
