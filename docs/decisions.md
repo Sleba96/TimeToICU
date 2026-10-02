@@ -6,6 +6,8 @@ Decisions that shape scope, data or governance. Newest first. Each entry says wh
 
 **Finding.** From the first collection (2026-10-02 04:10 UTC) to 09:45 UTC, each of the four sites returned the same figure on all 68 polls: TTSH 61, KTPH 64, Woodlands 17, Alexandra UCC 240. The upstream datastore, called directly at the end of that window, returned the same four numbers, so this is not a collector fault. The dataset is titled "ED Waiting Times (2025)", a search result shows it last updated on 19 August 2025, the data.gov.sg dataset page says the dataset was not found or unpublished, and the v2 metadata endpoint answers that the dataset id does not exist, while the datastore endpoint still serves the four rows.
 
+**More evidence (same day).** The NUHS live page showed Alexandra UCC under 1 hour at 17:30 SGT while our feed said 240 minutes. The dataset is absent from the current data.gov.sg catalogue listing and its v2 metadata lookup fails. See `docs/data-candidates.md`.
+
 **Reading.** The source is most likely no longer updated, and the numbers we show are a frozen snapshot. This is not proven: only 5.5 hours of history exist, and a real queue would normally move over that time at four sites. A few days of unchanged history would settle it.
 
 **Effect today.** The sheet says "Waiting time as published." and adds "This figure has not changed for …" after 30 minutes. That is honest about the age, but the big number still looks live. This touches D-006 (freshness) and D-012 (first view).
