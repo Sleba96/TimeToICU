@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Footer from "./Footer";
 import Sheet from "./Sheet";
 import { loadSites, type Site } from "@/lib/data";
+import { CARE_KINDS, CARE_NOTE, CARE_SOURCE } from "@/lib/care";
 import { AIR, DENGUE, RAIN, dengueSummary, gradient, tint, type LayerData, type LayerKey } from "@/lib/layers";
 
 const MapView = dynamic(() => import("./MapView"), { ssr: false });
@@ -23,6 +24,7 @@ export default function Home() {
   const [selected, setSelected] = useState<string | null>(null);
   const [layers, setLayers] = useState<Set<LayerKey>>(new Set());
   const [data, setData] = useState<LayerData>({ rain: null, air: null, dengue: null });
+  const [care, setCare] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const clear = useCallback(() => setSelected(null), []);
   const toggle = (k: LayerKey) =>
@@ -89,13 +91,16 @@ export default function Home() {
   return (
     <div className="app">
       <main className="stage">
-        <MapView sites={sites} selected={selected} layers={layers} data={data} onSelect={setSelected} onClear={clear} />
+        <MapView sites={sites} selected={selected} layers={layers} care={care} data={data} onSelect={setSelected} onClear={clear} />
         <div className="chips" role="group" aria-label="Map layers">
           {CHIPS.map(([k, name]) => (
             <button key={k} className="chip" aria-pressed={layers.has(k)} onClick={() => toggle(k)}>
               {name}
             </button>
           ))}
+          <button className="chip" aria-pressed={care} onClick={() => setCare((v) => !v)}>
+            Hospitals &amp; clinics
+          </button>
         </div>
         {error && <p className="status" role="status">{error}</p>}
         {!error && missing.length > 0 && (
@@ -105,7 +110,7 @@ export default function Home() {
         )}
         {site && <Sheet site={site} onClose={clear} />}
       </main>
-      {(showRain || showAir || showDengue) && (
+      {(showRain || showAir || showDengue || care) && (
         <div className="legend" aria-label="Map legend">
           {showRain && (
             <>
@@ -137,6 +142,20 @@ export default function Home() {
                 {dengueSummary(data.dengue)}
               </span>
               <p className="legend-note">{DENGUE.note}</p>
+            </div>
+          )}
+          {care && (
+            <div className="legend-row bands">
+              <b>Hospitals &amp; clinics</b>
+              {CARE_KINDS.map((k) => (
+                <span key={k.kind} className="band">
+                  <i className={`care-key ${k.kind}`} aria-hidden="true" />
+                  {k.label}
+                </span>
+              ))}
+              <p className="legend-note">
+                {CARE_NOTE} Source: {CARE_SOURCE.source}, {CARE_SOURCE.fetched}.
+              </p>
             </div>
           )}
         </div>
