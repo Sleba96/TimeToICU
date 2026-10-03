@@ -1,4 +1,4 @@
--- Dengue joins the hourly PSI job (60-minute cadence). PM2.5 hourly keeps its own job at minute 36.
+-- Dengue clusters change on working days and the file is republished about once a day (about 10:06 Singapore time),
+-- so the collector reads it once a day, at 10:30 Singapore time (02:30 UTC). PSI and PM2.5 keep their own jobs.
 
-select cron.unschedule('collect-hourly');
-select cron.schedule('collect-hourly', '21 * * * *', $$select private.invoke_collector('psi,dengue')$$);
+select cron.schedule('collect-dengue', '30 2 * * *', $$select private.invoke_collector('dengue')$$);

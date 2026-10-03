@@ -10,7 +10,7 @@ Verified by direct requests on 2026-10-02. Fixtures in `tests/fixtures/` are the
 | PSI / PM2.5 | `api-open.data.gov.sg/v2/real-time/api/psi` | 5 regions, 12 readings | Yes (hourly) | Collected hourly |
 | PM2.5 1-hour | `api-open.data.gov.sg/v2/real-time/api/pm25` | 5 regions, `pm25_one_hourly` | Yes (on the hour, published ~30 min later) | Collected hourly at minute 36 |
 | Taxi availability | `api.data.gov.sg/v1/transport/taxi-availability` | GeoJSON MultiPoint, ~1,800 points, 43 KB | Yes | Collected every 15 min, aggregated |
-| Dengue clusters | `data.gov.sg/api/action/datastore_search_sql?sql=SELECT%20*%20FROM%20%22d_dbfabf16158d1b0e1c420627c0819168%22` | GeoJSON FeatureCollection, polygons with case counts | Yes | Collected hourly; near-real-time clusters (2+ cases, 14 days, 150m radius) |
+| Dengue clusters | `data.gov.sg/api/action/datastore_search_sql?sql=SELECT%20*%20FROM%20%22d_dbfabf16158d1b0e1c420627c0819168%22` | GeoJSON FeatureCollection, polygons with case counts | Yes | Collected daily (D-021); file republished about once a day, clusters change on working days; clusters are 2+ cases, 14 days, 150 m radius |
 | Public holidays | `api-production.data.gov.sg/v2/public/api/collections/691/metadata` then each child dataset | `date`, `day`, `holiday` | n/a | Collected daily |
 | ICU utilisation by epi-week | datastore `d_ac42b0ea4ae0528bc9dbef90f0658f2b` | `epi_year`, `epi_week`, `status` (COVID / Non-COVID / Empty), `count` | Epi-week | Collected daily; static series, 156 rows covering epi-weeks 2023-09 to 2024-08 |
 | Admissions 1984–2020 | datastore `d_a5267c58f60b20f8e04576261abfac93` | Annual, 296 rows, many nulls | Year | Context only |

@@ -465,7 +465,7 @@ export const SOURCES: Record<string, SourceDef> = {
     fetch: simpleFetch("https://api.data.gov.sg/v1/transport/taxi-availability"),
     parse: parseTaxi,
   },
-  dengue: { id: "dengue", cadenceMinutes: 60, fetch: fetchDengue, parse: (b) => parseDengue(b) },
+  dengue: { id: "dengue", cadenceMinutes: 1440, fetch: fetchDengue, parse: (b) => parseDengue(b) },
   icu_epiweek: {
     id: "icu_epiweek",
     cadenceMinutes: 1440,
