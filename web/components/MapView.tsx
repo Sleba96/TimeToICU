@@ -7,7 +7,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { style } from "@/lib/mapStyle";
 import type { Site } from "@/lib/data";
 import { placeTags, type Rect, type TagBox } from "@/lib/placement";
-import { FIELD_COORDS, airBand, airField, nearestRain, rainField, rainText, type LayerData, type LayerKey } from "@/lib/layers";
+import { DENGUE, FIELD_COORDS, airBand, dengueText, airField, nearestRain, rainField, rainText, type LayerData, type LayerKey } from "@/lib/layers";
 
 maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 
@@ -72,6 +72,7 @@ export default function MapView({
   const map = useRef<maplibregl.Map | null>(null);
   const entries = useRef<Map<string, Entry>>(new Map());
   const airMarkers = useRef<maplibregl.Marker[]>([]);
+  const dengueMarkers = useRef<maplibregl.Marker[]>([]);
   const callbacks = useRef({ onSelect, onClear });
   callbacks.current = { onSelect, onClear };
   const live = useRef({ layers, data });
@@ -90,6 +91,7 @@ export default function MapView({
     container.classList.toggle("mid", z >= MID_ZOOM);
     container.classList.toggle("l-rain", live.current.layers.has("rain"));
     container.classList.toggle("l-air", live.current.layers.has("air"));
+    container.classList.toggle("l-dengue", live.current.layers.has("dengue"));
     const { clientWidth: W, clientHeight: H } = container;
     const list = [...entries.current.values()].sort((a, b) =>
       a.site.open === b.site.open ? a.site.code.localeCompare(b.site.code) : a.site.open ? -1 : 1,
@@ -146,6 +148,8 @@ export default function MapView({
       store.clear();
       airMarkers.current.forEach((a) => a.remove());
       airMarkers.current = [];
+      dengueMarkers.current.forEach((a) => a.remove());
+      dengueMarkers.current = [];
       m.remove();
       map.current = null;
       fitted.current = false;
@@ -225,6 +229,52 @@ export default function MapView({
     }
     layout.current();
   }, [ready, data, layers]);
+
+  // Dengue clusters: each outline from a close zoom, and a dot sized by cases so clusters stay visible zoomed out.
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready) return;
+    const d = data.dengue;
+    const fc = (features: object[]) => ({ type: "FeatureCollection", features }) as unknown as maplibregl.GeoJSONSourceSpecification["data"];
+    const polys = fc((d?.clusters ?? []).map((c) => ({ type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [c.ring] } })));
+    const dots = fc((d?.clusters ?? []).map((c) => ({ type: "Feature", properties: { cases: c.cases }, geometry: { type: "Point", coordinates: [c.lon, c.lat] } })));
+    const color = `rgb(${DENGUE.rgb.join(",")})`;
+    const src = m.getSource("dengue") as maplibregl.GeoJSONSource | undefined;
+    if (src) {
+      src.setData(polys);
+      (m.getSource("dengue-dots") as maplibregl.GeoJSONSource).setData(dots);
+    } else {
+      m.addSource("dengue", { type: "geojson", data: polys });
+      m.addSource("dengue-dots", { type: "geojson", data: dots });
+      m.addLayer({ id: "dengue-fill", type: "fill", source: "dengue", paint: { "fill-color": color, "fill-opacity": 0.35 } }, "water");
+      m.addLayer({ id: "dengue-line", type: "line", source: "dengue", paint: { "line-color": color, "line-width": 1.5 } }, "water");
+      m.addLayer(
+        {
+          id: "dengue-dot",
+          type: "circle",
+          source: "dengue-dots",
+          paint: {
+            "circle-color": color,
+            "circle-opacity": ["interpolate", ["linear"], ["zoom"], 12, 0.55, 14, 0],
+            "circle-stroke-color": "#ffffff",
+            "circle-stroke-width": 1,
+            "circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], 12, 1, 14, 0],
+            "circle-radius": ["min", 18, ["+", 5, ["*", 2.2, ["sqrt", ["get", "cases"]]]]],
+          },
+        },
+        "water",
+      );
+    }
+    const show = layers.has("dengue") && !!d;
+    for (const id of ["dengue-fill", "dengue-line", "dengue-dot"]) m.setLayoutProperty(id, "visibility", show ? "visible" : "none");
+    dengueMarkers.current.forEach((a) => a.remove());
+    dengueMarkers.current = [];
+    for (const c of d?.clusters ?? []) {
+      const label = el("div", "dnglbl", `${dengueText(c.cases)} of dengue`);
+      dengueMarkers.current.push(new maplibregl.Marker({ element: label, anchor: "center" }).setLngLat([c.lon, c.lat]).addTo(m));
+    }
+    layout.current();
+  }, [ready, data.dengue, layers]);
 
   // Air region labels: shown from a closer zoom, with the NEA band name in text.
   useEffect(() => {

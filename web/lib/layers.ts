@@ -2,8 +2,10 @@
 
 export type RainData = { at: string; stations: { lat: number; lon: number; mm: number }[] };
 export type AirData = { at: string; regions: { name: string; lat: number; lon: number; v: number }[] };
-export type LayerData = { rain: RainData | null; air: AirData | null };
-export type LayerKey = "rain" | "air";
+export type DengueCluster = { place: string; cases: number; lat: number; lon: number; ring: [number, number][] };
+export type DengueData = { at: string | null; clusters: DengueCluster[] };
+export type LayerData = { rain: RainData | null; air: AirData | null; dengue: DengueData | null };
+export type LayerKey = "rain" | "air" | "dengue";
 
 // Fixed scales, so a calm day looks calm. The ends are what the legend writes.
 export const RAIN = { max: 5, rgb: [29, 79, 145] as const, lo: "0 mm", hi: "5 mm or more", title: "Rain, last 5 min", dry: "No rain at the moment." };
@@ -19,6 +21,51 @@ export const AIR = {
     { name: "Very high", max: Infinity, alpha: 0.72 },
   ],
 };
+
+// Dengue: NEA clusters (two or more cases within 14 days and 150 m), drawn as their own outline. Amber, so it never reads as red (selected site, 995) or green.
+export const DENGUE = {
+  rgb: [176, 96, 16] as const,
+  title: "Dengue clusters",
+  note: "Each patch is an NEA cluster: two or more cases within 14 days and 150 m.",
+};
+
+type Geo = { features?: { geometry?: { type?: string; coordinates?: unknown }; properties?: { CASE_SIZE?: unknown; LOCALITY?: unknown; FMEL_UPD_D?: unknown } }[] };
+
+// NEA's file stamps each cluster "yyyymmddhhmmss" with no time zone stated; Singapore time is assumed. The newest stands in for the file.
+export function dengueFromGeo(geo: Geo): DengueData | null {
+  if (!Array.isArray(geo?.features)) return null;
+  const clusters: DengueCluster[] = [];
+  let at: string | null = null;
+  for (const f of geo.features) {
+    const cases = Number(f.properties?.CASE_SIZE);
+    const ring = f.geometry?.type === "Polygon" ? (f.geometry.coordinates as [number, number][][])?.[0] : undefined;
+    if (!Number.isInteger(cases) || cases < 0 || !Array.isArray(ring) || ring.length < 4) continue;
+    const lons = ring.map((c) => c[0]);
+    const lats = ring.map((c) => c[1]);
+    clusters.push({
+      place: String(f.properties?.LOCALITY ?? "").trim(),
+      cases,
+      lon: (Math.min(...lons) + Math.max(...lons)) / 2,
+      lat: (Math.min(...lats) + Math.max(...lats)) / 2,
+      ring,
+    });
+    const m = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/.exec(String(f.properties?.FMEL_UPD_D ?? ""));
+    const ts = m ? `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}+08:00` : null;
+    if (ts && (at === null || ts > at)) at = ts;
+  }
+  return { at, clusters };
+}
+
+export function dengueText(cases: number): string {
+  return `${cases} ${cases === 1 ? "case" : "cases"}`;
+}
+
+export function dengueSummary(d: DengueData): string {
+  const n = d.clusters.length;
+  if (n === 0) return "No active clusters.";
+  const total = d.clusters.reduce((a, c) => a + c.cases, 0);
+  return `${n} ${n === 1 ? "cluster" : "clusters"}, ${dengueText(total)}`;
+}
 
 export function airBandOf(v: number) {
   return AIR.bands.find((b) => v <= b.max) ?? AIR.bands[AIR.bands.length - 1];

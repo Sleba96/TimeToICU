@@ -340,6 +340,51 @@ export function parseHolidays(body: string): Parsed {
 }
 
 // ---------------------------------------------------------------------------
+// Dengue clusters (NEA, data.gov.sg dataset d_dbfabf16...). A GeoJSON file, reached in two steps:
+// poll-download returns a short-lived signed URL. Stored as island-wide totals, not as polygons.
+// ---------------------------------------------------------------------------
+
+export const DENGUE_POLL_URL = "https://api-open.data.gov.sg/v1/public/api/datasets/d_dbfabf16158d1b0e1c420627c0819168/poll-download";
+
+async function fetchDengue(get: Getter): Promise<Fetched> {
+  const meta = await get(DENGUE_POLL_URL);
+  if (meta.status !== 200) return meta;
+  const url: unknown = JSON.parse(meta.body)?.data?.url;
+  if (typeof url !== "string") throw new Error("dengue: poll-download gave no url");
+  return get(url);
+}
+
+/** FMEL_UPD_D is "yyyymmddhhmmss". The publisher does not state a time zone; Singapore time is assumed. */
+export function dengueTimestamp(raw: unknown): string | null {
+  const m = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/.exec(String(raw ?? ""));
+  return m ? `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}+08:00` : null;
+}
+
+export function parseDengue(body: string): Parsed {
+  const out = empty();
+  const d = JSON.parse(body);
+  if (d?.type !== "FeatureCollection" || !Array.isArray(d?.features)) throw new Error("dengue: unexpected response shape");
+  const sizes: number[] = [];
+  let latest: string | null = null;
+  for (const f of d.features) {
+    const size = Number(f?.properties?.CASE_SIZE);
+    if (!Number.isInteger(size) || size < 0 || !f?.geometry) {
+      out.issues.push({ kind: "unparsable_record", detail: f?.properties ?? null });
+      continue;
+    }
+    sizes.push(size);
+    const ts = dengueTimestamp(f.properties.FMEL_UPD_D);
+    if (ts && (latest === null || ts > latest)) latest = ts;
+  }
+  // The file carries no overall timestamp; the newest cluster update stands in. An empty file is a real "no clusters".
+  const at = (metric: string, value: number) => out.observations.push({ metric, location: "SG", observed_at: latest, value, value_text: null });
+  at("dengue_clusters", sizes.length);
+  at("dengue_cases_total", sizes.reduce((a, b) => a + b, 0));
+  at("dengue_cluster_max_cases", sizes.length ? Math.max(...sizes) : 0);
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // ICU utilisation by epi-week (static MOH series on data.gov.sg)
 
 const ICU_URL = "https://data.gov.sg/api/action/datastore_search?limit=500&resource_id=d_ac42b0ea4ae0528bc9dbef90f0658f2b";
@@ -420,6 +465,7 @@ export const SOURCES: Record<string, SourceDef> = {
     fetch: simpleFetch("https://api.data.gov.sg/v1/transport/taxi-availability"),
     parse: parseTaxi,
   },
+  dengue: { id: "dengue", cadenceMinutes: 60, fetch: fetchDengue, parse: (b) => parseDengue(b) },
   icu_epiweek: {
     id: "icu_epiweek",
     cadenceMinutes: 1440,

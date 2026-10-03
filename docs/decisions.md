@@ -2,6 +2,16 @@
 
 Decisions that shape scope, data or governance. Newest first. Each entry says what was decided, why, and what would reopen it.
 
+## D-018 · 2026-10-03 · Layers: dengue clusters as outlines on the map (provisional)
+
+**Decision.** A third chip, Dengue, shows NEA's active dengue clusters (two or more cases within 14 days and 150 m) as amber outlines with a light fill, the same chip, legend and server-cache pattern as rain and air (D-015). Zoomed out, each cluster is a dot sized by case count (capped, so one large cluster does not hide the rest); from about zoom 12 the dot fades into the outline, and from zoom 11 each cluster carries a "N cases" label. The legend gives the colour, the totals ("9 clusters, 120 cases") and the one-line definition of a cluster. Amber, because red stays for the selected site and 995 and green is avoided (D-015). The web layer reads the file live through `/api/layers` (cached 5 minutes, nothing stored). The collector stores only island-wide totals per hour (`dengue_clusters`, `dengue_cases_total`, `dengue_cluster_max_cases`, location `SG`), not polygons.
+
+**Why.** The data is current (the file changes daily), open-licensed and map-shaped, and it was the strongest candidate in `docs/data-candidates.md`. Storing totals keeps raw volume small, and the raw file is still kept under the `every_distinct` policy.
+
+**Provisional.** The file has no overall timestamp; the newest cluster update (`FMEL_UPD_D`, "yyyymmddhhmmss", time zone not stated, Singapore time assumed) stands in for it. The dataset reaches us in two steps (poll-download returns a signed URL that lasts an hour). Cases are those in clusters, not all notified cases, and the map does not say a place is safe when it shows no cluster.
+
+**Reopen if** the publisher changes the field names (the parser flags unreadable rows and throws on a wrong shape), the file stops updating, or the outlines are read as a risk rating of a hospital's neighbourhood.
+
 ## D-017 · 2026-10-02 · The four ED figures are hidden until a current source is found
 
 **Decision.** All ten public sites show as quiet "No data" tags (D-014). For the four sites that have a feed (TTSH, KTPH, Woodlands, Alexandra UCC), the sheet says "The published figure for this site looks out of date, so it is not shown." and the About page explains why. The collector keeps running and keeps its history. One switch, `ED_FEED_PAUSED` in `web/lib/data.ts`, shows the figures again.
