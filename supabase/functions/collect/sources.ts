@@ -348,7 +348,8 @@ export const DENGUE_POLL_URL = "https://api-open.data.gov.sg/v1/public/api/datas
 
 async function fetchDengue(get: Getter): Promise<Fetched> {
   const meta = await get(DENGUE_POLL_URL);
-  if (meta.status !== 200) return meta;
+  // poll-download answers 201 (Created) with the signed URL, so any 2xx counts; anything else is the run's result.
+  if (meta.status < 200 || meta.status >= 300) return meta;
   const url: unknown = JSON.parse(meta.body)?.data?.url;
   if (typeof url !== "string") throw new Error("dengue: poll-download gave no url");
   return get(url);

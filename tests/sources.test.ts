@@ -184,12 +184,20 @@ test("dengue: fetch follows the signed url from poll-download", async () => {
   const urls: string[] = [];
   const get = (url: string): Promise<Fetched> => {
     urls.push(url);
-    const body = url.includes("poll-download") ? JSON.stringify({ code: 0, data: { url: "https://s3.example/file.geojson?sig=1" } }) : fixture("dengue.json");
-    return Promise.resolve({ status: 200, body, contentType: null });
+    // The real poll-download answers 201 (Created), not 200.
+    const poll = url.includes("poll-download");
+    const body = poll ? JSON.stringify({ code: 0, data: { url: "https://s3.example/file.geojson?sig=1" } }) : fixture("dengue.json");
+    return Promise.resolve({ status: poll ? 201 : 200, body, contentType: null });
   };
   const f = await SOURCES.dengue.fetch(get);
   assert.deepEqual(urls, [DENGUE_POLL_URL, "https://s3.example/file.geojson?sig=1"]);
+  assert.equal(f.status, 200);
   assert.equal(parseDengue(f.body).observations.length, 3);
+});
+
+test("dengue: a failing poll-download is returned as it is, not followed", async () => {
+  const get = (): Promise<Fetched> => Promise.resolve({ status: 429, body: "slow down", contentType: null });
+  assert.equal((await SOURCES.dengue.fetch(get)).status, 429);
 });
 
 test("PM2.5 hourly: five regions, 1-hour metric, source timestamp kept", () => {
