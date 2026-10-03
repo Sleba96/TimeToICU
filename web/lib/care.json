@@ -1,0 +1,330 @@
+{
+ "source": "OneMap (Singapore Land Authority), names curated by hand",
+ "fetched": "2026-10-03",
+ "sites": [
+  {
+   "name": "Singapore General Hospital",
+   "kind": "hospital",
+   "lat": 1.27964,
+   "lon": 103.83554
+  },
+  {
+   "name": "Changi General Hospital",
+   "kind": "hospital",
+   "lat": 1.34083,
+   "lon": 103.94947
+  },
+  {
+   "name": "National University Hospital",
+   "kind": "hospital",
+   "lat": 1.29442,
+   "lon": 103.78369
+  },
+  {
+   "name": "Tan Tock Seng Hospital",
+   "kind": "hospital",
+   "lat": 1.32137,
+   "lon": 103.84569
+  },
+  {
+   "name": "Khoo Teck Puat Hospital",
+   "kind": "hospital",
+   "lat": 1.42408,
+   "lon": 103.83858
+  },
+  {
+   "name": "Ng Teng Fong General Hospital",
+   "kind": "hospital",
+   "lat": 1.33361,
+   "lon": 103.74545
+  },
+  {
+   "name": "Sengkang General Hospital",
+   "kind": "hospital",
+   "lat": 1.39439,
+   "lon": 103.89316
+  },
+  {
+   "name": "Woodlands Health",
+   "kind": "hospital",
+   "lat": 1.42468,
+   "lon": 103.79474
+  },
+  {
+   "name": "Alexandra Hospital",
+   "kind": "hospital",
+   "lat": 1.28548,
+   "lon": 103.80018
+  },
+  {
+   "name": "KK Women's and Children's Hospital",
+   "kind": "hospital",
+   "lat": 1.31049,
+   "lon": 103.84681
+  },
+  {
+   "name": "Mount Elizabeth Hospital",
+   "kind": "hospital",
+   "lat": 1.30541,
+   "lon": 103.83547
+  },
+  {
+   "name": "Mount Elizabeth Novena Hospital",
+   "kind": "hospital",
+   "lat": 1.32214,
+   "lon": 103.84421
+  },
+  {
+   "name": "Gleneagles Hospital",
+   "kind": "hospital",
+   "lat": 1.30743,
+   "lon": 103.81961
+  },
+  {
+   "name": "Raffles Hospital",
+   "kind": "hospital",
+   "lat": 1.30118,
+   "lon": 103.85747
+  },
+  {
+   "name": "Parkway East Hospital",
+   "kind": "hospital",
+   "lat": 1.31509,
+   "lon": 103.90876
+  },
+  {
+   "name": "Mount Alvernia Hospital",
+   "kind": "hospital",
+   "lat": 1.34182,
+   "lon": 103.83759
+  },
+  {
+   "name": "Farrer Park Hospital",
+   "kind": "hospital",
+   "lat": 1.31276,
+   "lon": 103.85384
+  },
+  {
+   "name": "Ang Mo Kio-Thye Hua Kwan Hospital",
+   "kind": "community",
+   "lat": 1.38403,
+   "lon": 103.84036
+  },
+  {
+   "name": "Bright Vision Hospital",
+   "kind": "community",
+   "lat": 1.37206,
+   "lon": 103.87807
+  },
+  {
+   "name": "Jurong Community Hospital",
+   "kind": "community",
+   "lat": 1.33261,
+   "lon": 103.74663
+  },
+  {
+   "name": "Outram Community Hospital",
+   "kind": "community",
+   "lat": 1.27751,
+   "lon": 103.83548
+  },
+  {
+   "name": "Ren Ci Community Hospital",
+   "kind": "community",
+   "lat": 1.32288,
+   "lon": 103.84597
+  },
+  {
+   "name": "St Andrew's Community Hospital",
+   "kind": "community",
+   "lat": 1.34169,
+   "lon": 103.9488
+  },
+  {
+   "name": "St Luke's Hospital",
+   "kind": "community",
+   "lat": 1.3496,
+   "lon": 103.74218
+  },
+  {
+   "name": "Sengkang Community Hospital",
+   "kind": "community",
+   "lat": 1.39602,
+   "lon": 103.89183
+  },
+  {
+   "name": "Yishun Community Hospital",
+   "kind": "community",
+   "lat": 1.42377,
+   "lon": 103.83724
+  },
+  {
+   "name": "Ang Mo Kio Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.37432,
+   "lon": 103.84568
+  },
+  {
+   "name": "Bedok Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.32671,
+   "lon": 103.93203
+  },
+  {
+   "name": "Bidadari Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.33696,
+   "lon": 103.8751
+  },
+  {
+   "name": "Bukit Batok Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.35202,
+   "lon": 103.74782
+  },
+  {
+   "name": "Bukit Merah Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.2837,
+   "lon": 103.81705
+  },
+  {
+   "name": "Bukit Panjang Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.38275,
+   "lon": 103.76019
+  },
+  {
+   "name": "Choa Chu Kang Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.38234,
+   "lon": 103.75078
+  },
+  {
+   "name": "Clementi Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.31703,
+   "lon": 103.76351
+  },
+  {
+   "name": "Eunos Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.31734,
+   "lon": 103.90578
+  },
+  {
+   "name": "Geylang Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.31949,
+   "lon": 103.88717
+  },
+  {
+   "name": "Hougang Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.36991,
+   "lon": 103.889
+  },
+  {
+   "name": "Jurong Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.34969,
+   "lon": 103.73077
+  },
+  {
+   "name": "Kallang Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.31678,
+   "lon": 103.85875
+  },
+  {
+   "name": "Khatib Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.4182,
+   "lon": 103.83443
+  },
+  {
+   "name": "Marine Parade Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.30223,
+   "lon": 103.90788
+  },
+  {
+   "name": "Outram Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.27937,
+   "lon": 103.83839
+  },
+  {
+   "name": "Pasir Ris Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.3735,
+   "lon": 103.94818
+  },
+  {
+   "name": "Pioneer Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.33856,
+   "lon": 103.69898
+  },
+  {
+   "name": "Punggol Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.40288,
+   "lon": 103.9132
+  },
+  {
+   "name": "Queenstown Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.29847,
+   "lon": 103.80102
+  },
+  {
+   "name": "Sembawang Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.44887,
+   "lon": 103.8227
+  },
+  {
+   "name": "Sengkang Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.39269,
+   "lon": 103.89433
+  },
+  {
+   "name": "Serangoon Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.35092,
+   "lon": 103.87416
+  },
+  {
+   "name": "Tampines Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.35731,
+   "lon": 103.94585
+  },
+  {
+   "name": "Tampines North Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.36333,
+   "lon": 103.93756
+  },
+  {
+   "name": "Toa Payoh Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.33448,
+   "lon": 103.85896
+  },
+  {
+   "name": "Woodlands Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.43089,
+   "lon": 103.77521
+  },
+  {
+   "name": "Yishun Polyclinic",
+   "kind": "polyclinic",
+   "lat": 1.43044,
+   "lon": 103.8392
+  }
+ ]
+}

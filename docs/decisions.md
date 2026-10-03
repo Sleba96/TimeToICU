@@ -2,9 +2,29 @@
 
 Decisions that shape scope, data or governance. Newest first. Each entry says what was decided, why, and what would reopen it.
 
+## D-021 · 2026-10-03 · Dengue is read about once a day, from its own route
+
+**Decision.** The dengue clusters are measured, not assumed, to change rarely: the data.gov.sg file is republished about once a day (`Last-Modified` 3 Oct 2026, 10:06 Singapore time) and the clusters inside carry update dates only on working days (23, 24, 28, 29 and 30 September; none on 1 and 2 October). So dengue leaves `/api/layers` and gets `/api/dengue`: the server keeps it 12 hours, the CDN serves it for a day (`s-maxage=86400`, stale copy for a week while it refreshes), and the page asks again every 12 hours, or after 5 minutes if the read failed. Rain and air quality keep their 15 minutes. The collector's dengue totals are read once a day at 10:30 Singapore time instead of hourly.
+
+**Why.** Reading every 15 minutes (D-019) spent upstream calls, and rate limiting, on a figure that moves about daily. A weekly read would show clusters up to a week old during an active outbreak, so daily is the longest period that still follows the source.
+
+**Provisional.** The cadence comes from five days of update dates and one `Last-Modified`; NEA's own schedule is not published. The collector stores only island-wide totals, so a day's gap is the finest its history can show.
+
+**Reopen if** the file is seen changing more than once a day, or stops changing for days (then the source may have moved).
+
+## D-020 · 2026-10-03 · Hospitals and polyclinics are shown as a quiet directory layer
+
+**Decision.** A "Hospitals & clinics" chip shows 54 places as fixed markers: 17 hospitals (public and private), 9 community hospitals and 28 polyclinics, told apart by shape (square, hollow square, circle) and by name from a closer zoom. There is no figure, colour scale, ordering or "nearest" on it, and the legend says it is a directory, that opening hours are not shown, and to call 995 in an emergency. The list is a static file, `web/lib/care.json`, built by `scripts/build-care.mjs` from a hand-kept list of names, with coordinates from OneMap; a name OneMap does not return fails the build instead of being guessed. A hospital within 100 m of one of our ED pins is not drawn twice. The existing ED sites and their paused feed are untouched (D-017).
+
+**Why.** No open dataset lists all hospitals and polyclinics: data.gov.sg has 8 polyclinic vaccination sites and 1,193 CHAS GP clinics (2024, no hours), and OpenStreetMap in our tiles misses many polyclinics. A short curated list is verifiable by name; it is also small enough to keep honest. It answers "where are the care facilities" without saying where to go (D-001).
+
+**Provisional.** The kind is not a claim about emergency care: private hospitals and polyclinics differ in what they take and when, and the data has no hours. Urgent-care centres, 24-hour clinics and the CHAS clinics are not in this first version; "urgent or ambulatory" needs hours sourced one by one. New or closed sites need a manual edit of the script's list.
+
+**Reopen if** a maintained open list with hours appears (MOH, SingHealth, OSM tagging), or the layer is read as advice on where to go.
+
 ## D-019 · 2026-10-03 · Layer data is fetched rarely and fails softly; the server function stays as a thin proxy
 
-**Decision.** `/api/layers` stays, but as a cache in front of data.gov.sg, not a live feed. Rain and air quality are refreshed at most every 15 minutes, dengue every hour (the file changes about daily). The server keeps the last good value per layer and serves it to every visitor; if a refresh fails it serves the last good value rather than "unavailable", and a failure is never kept as a result. Rate limiting (429), server errors and network errors are retried twice (1 s, then 3 s); a 404 is not. The response carries `Cache-Control: s-maxage=900, stale-while-revalidate=3600` when every layer is present and `s-maxage=60` when one is missing, so the CDN absorbs most visits and a recovered source shows within a minute. The page re-requests every 15 minutes while a layer is on.
+**Decision.** `/api/layers` stays, but as a cache in front of data.gov.sg, not a live feed. Rain and air quality are refreshed at most every 15 minutes (dengue was hourly here; see D-021 for its daily cadence). The server keeps the last good value per layer and serves it to every visitor; if a refresh fails it serves the last good value rather than "unavailable", and a failure is never kept as a result. Rate limiting (429), server errors and network errors are retried twice (1 s, then 3 s); a 404 is not. The response carries `Cache-Control: s-maxage=900, stale-while-revalidate=3600` when every layer is present and `s-maxage=60` when one is missing, so the CDN absorbs most visits and a recovered source shows within a minute. The page re-requests every 15 minutes while a layer is on, and every minute while one is missing; a layer that comes back empty keeps its last good value on screen, and the response says why a layer is missing (`issues`).
 
 **Why.** Dengue read "not available" in production. The dengue endpoint returned 429 once in twelve rapid calls from here, shared Vercel addresses are likelier to be limited (D-009), and the old route kept a failed read for five minutes. Is the function worth keeping? Yes, as a proxy: the API itself allows browsers (CORS open), but the dengue file sits on S3 without CORS headers, so a browser cannot read it, and calling from every browser would spend the rate limit per visit and expose any API key. Reading the layers from stored data instead would mean moving polygons and station readings into Supabase; not worth it for figures that are only context.
 

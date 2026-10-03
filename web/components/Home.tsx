@@ -1,20 +1,50 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Footer from "./Footer";
 import Sheet from "./Sheet";
 import { loadSites, type Site } from "@/lib/data";
+import { CARE_KINDS, CARE_NOTE, CARE_SOURCE } from "@/lib/care";
 import { AIR, DENGUE, RAIN, dengueSummary, gradient, tint, type LayerData, type LayerKey } from "@/lib/layers";
 
 const MapView = dynamic(() => import("./MapView"), { ssr: false });
 const REFRESH_MS = 60_000;
 const LAYER_REFRESH_MS = 900_000;
+const LAYER_RETRY_MS = 60_000;
+// NEA republishes the cluster file about once a day (D-021): look again twice a day, and again in five minutes after a failure.
+const DENGUE_REFRESH_MS = 12 * 3_600_000;
+const DENGUE_RETRY_MS = 300_000;
 const CHIPS: [LayerKey, string][] = [
   ["rain", "Rain"],
   ["air", "Air quality"],
   ["dengue", "Dengue"],
 ];
+
+// Fetches `url` while `enabled`, then again after refreshMs (everything present) or retryMs (something missing or failed).
+function useRefresh<T>(enabled: boolean, url: string, refreshMs: number, retryMs: number, apply: (d: T) => boolean, done: () => void) {
+  const latest = useRef({ apply, done });
+  latest.current = { apply, done };
+  useEffect(() => {
+    if (!enabled) return;
+    let live = true;
+    let timer: ReturnType<typeof setTimeout>;
+    const run = () =>
+      fetch(url)
+        .then((r) => (r.ok ? (r.json() as Promise<T>) : Promise.reject(new Error(String(r.status)))))
+        .then((d) => (live ? latest.current.apply(d) : true), () => false)
+        .then((complete) => {
+          if (!live) return;
+          latest.current.done();
+          timer = setTimeout(run, complete ? refreshMs : retryMs);
+        });
+    run();
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [enabled, url, refreshMs, retryMs]);
+}
 
 export default function Home() {
   const [sites, setSites] = useState<Site[]>([]);
@@ -22,7 +52,8 @@ export default function Home() {
   const [selected, setSelected] = useState<string | null>(null);
   const [layers, setLayers] = useState<Set<LayerKey>>(new Set());
   const [data, setData] = useState<LayerData>({ rain: null, air: null, dengue: null });
-  const [loaded, setLoaded] = useState(false);
+  const [care, setCare] = useState(false);
+  const [loaded, setLoaded] = useState({ layers: false, dengue: false });
   const clear = useCallback(() => setSelected(null), []);
   const toggle = (k: LayerKey) =>
     setLayers((prev) => {
@@ -46,26 +77,20 @@ export default function Home() {
     };
   }, []);
 
-  // Rain and PM2.5 are fetched only once someone turns a layer on.
-  const wanted = layers.size > 0;
-  useEffect(() => {
-    if (!wanted) return;
-    let live = true;
-    const run = () =>
-      fetch("/api/layers")
-        .then((r) => (r.ok ? (r.json() as Promise<LayerData>) : Promise.reject(new Error(String(r.status)))))
-        .then((d) => live && (setData(d), setLoaded(true)))
-        .catch(() => live && (setData({ rain: null, air: null, dengue: null }), setLoaded(true)));
-    run();
-    const t = setInterval(run, LAYER_REFRESH_MS);
-    return () => {
-      live = false;
-      clearInterval(t);
-    };
-  }, [wanted]);
+  // Rain, PM2.5 and dengue are fetched only once someone turns a layer on. Dengue changes about daily, so it is read far less often.
+  const wantLayers = layers.has("rain") || layers.has("air");
+  useRefresh(wantLayers, "/api/layers", LAYER_REFRESH_MS, LAYER_RETRY_MS, (d: Pick<LayerData, "rain" | "air">) => {
+    // A layer that came back empty keeps its last good value; a failed call changes nothing.
+    setData((prev) => ({ ...prev, rain: d.rain ?? prev.rain, air: d.air ?? prev.air }));
+    return d.rain !== null && d.air !== null;
+  }, () => setLoaded((v) => ({ ...v, layers: true })));
+  useRefresh(layers.has("dengue"), "/api/dengue", DENGUE_REFRESH_MS, DENGUE_RETRY_MS, (d: Pick<LayerData, "dengue">) => {
+    setData((prev) => ({ ...prev, dengue: d.dengue ?? prev.dengue }));
+    return d.dengue !== null;
+  }, () => setLoaded((v) => ({ ...v, dengue: true })));
 
   const site = sites.find((s) => s.code === selected) ?? null;
-  const missing = loaded ? CHIPS.filter(([k]) => layers.has(k) && !data[k]).map(([, n]) => n) : [];
+  const missing = CHIPS.filter(([k]) => layers.has(k) && !data[k] && loaded[k === "dengue" ? "dengue" : "layers"]).map(([, n]) => n);
   const showRain = layers.has("rain") && data.rain !== null;
   const showAir = layers.has("air") && data.air !== null;
   const showDengue = layers.has("dengue") && data.dengue !== null;
@@ -74,13 +99,16 @@ export default function Home() {
   return (
     <div className="app">
       <main className="stage">
-        <MapView sites={sites} selected={selected} layers={layers} data={data} onSelect={setSelected} onClear={clear} />
+        <MapView sites={sites} selected={selected} layers={layers} care={care} data={data} onSelect={setSelected} onClear={clear} />
         <div className="chips" role="group" aria-label="Map layers">
           {CHIPS.map(([k, name]) => (
             <button key={k} className="chip" aria-pressed={layers.has(k)} onClick={() => toggle(k)}>
               {name}
             </button>
           ))}
+          <button className="chip" aria-pressed={care} onClick={() => setCare((v) => !v)}>
+            Hospitals &amp; clinics
+          </button>
         </div>
         {error && <p className="status" role="status">{error}</p>}
         {!error && missing.length > 0 && (
@@ -90,7 +118,7 @@ export default function Home() {
         )}
         {site && <Sheet site={site} onClose={clear} />}
       </main>
-      {(showRain || showAir || showDengue) && (
+      {(showRain || showAir || showDengue || care) && (
         <div className="legend" aria-label="Map legend">
           {showRain && (
             <>
@@ -122,6 +150,20 @@ export default function Home() {
                 {dengueSummary(data.dengue)}
               </span>
               <p className="legend-note">{DENGUE.note}</p>
+            </div>
+          )}
+          {care && (
+            <div className="legend-row bands">
+              <b>Hospitals &amp; clinics</b>
+              {CARE_KINDS.map((k) => (
+                <span key={k.kind} className="band">
+                  <i className={`care-key ${k.kind}`} aria-hidden="true" />
+                  {k.label}
+                </span>
+              ))}
+              <p className="legend-note">
+                {CARE_NOTE} Source: {CARE_SOURCE.source}, {CARE_SOURCE.fetched}.
+              </p>
             </div>
           )}
         </div>
