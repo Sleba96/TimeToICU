@@ -21,8 +21,12 @@ const apiKey = () => {
   return key ? { "x-api-key": key } : undefined;
 };
 
-async function upstream<T>(path: string): Promise<T | null> {
-  const res = await getWithRetry(`${API}/${path}`, apiKey());
+// Why a layer last failed, so a missing layer can be explained without server logs.
+const why = new Map<string, string>();
+const noteFor = (name: string) => (reason: string) => void why.set(name, reason);
+
+async function upstream<T>(name: string, path: string): Promise<T | null> {
+  const res = await getWithRetry(`${API}/${path}`, apiKey(), undefined, noteFor(name));
   if (!res) return null;
   try {
     const body = (await res.json()) as { code: number; data: T };
@@ -34,14 +38,15 @@ async function upstream<T>(path: string): Promise<T | null> {
 
 // Dengue clusters: a GeoJSON file reached through a short-lived signed URL (poll-download), so two calls.
 async function dengueFile(): Promise<Parameters<typeof dengueFromGeo>[0] | null> {
-  const poll = await getWithRetry(`https://api-open.data.gov.sg/v1/public/api/datasets/${DENGUE_DATASET}/poll-download`, apiKey());
+  const poll = await getWithRetry(`https://api-open.data.gov.sg/v1/public/api/datasets/${DENGUE_DATASET}/poll-download`, apiKey(), undefined, (r) => why.set("dengue", `poll-download: ${r}`));
   if (!poll) return null;
   try {
     const url = ((await poll.json()) as { data?: { url?: string } }).data?.url;
     if (!url) return null;
-    const file = await getWithRetry(url);
+    const file = await getWithRetry(url, undefined, undefined, (r) => why.set("dengue", `file: ${r}`));
     return file ? await file.json() : null;
   } catch {
+    why.set("dengue", "unreadable response");
     return null;
   }
 }
@@ -56,7 +61,7 @@ type Pm25Raw = {
 };
 
 async function loadRain(): Promise<RainData | null> {
-  const raw = await upstream<RainRaw>("rainfall");
+  const raw = await upstream<RainRaw>("rain", "rainfall");
   const r = raw?.readings?.[0];
   if (!raw || !r) return null;
   const at = new Map(r.data.map((d) => [d.stationId, d.value]));
@@ -68,7 +73,7 @@ async function loadRain(): Promise<RainData | null> {
 }
 
 async function loadAir(): Promise<AirData | null> {
-  const raw = await upstream<Pm25Raw>("pm25");
+  const raw = await upstream<Pm25Raw>("air", "pm25");
   const p = raw?.items?.at(-1);
   if (!raw || !p) return null;
   const regions = raw.regionMetadata.flatMap((m) => {
@@ -86,8 +91,11 @@ async function loadDengue(): Promise<DengueData | null> {
 export async function GET() {
   const [rain, air, dengue] = await Promise.all([layer("rain", FRESH_MS.rain, loadRain), layer("air", FRESH_MS.air, loadAir), layer("dengue", FRESH_MS.dengue, loadDengue)]);
   const complete = rain !== null && air !== null && dengue !== null;
+  const found = { rain, air, dengue };
+  const issues = Object.fromEntries(Object.entries(found).flatMap(([k, v]) => (v === null ? [[k, why.get(k) ?? "no data"]] : [])));
+  if (!complete) console.warn("layers missing", issues);
   return Response.json(
-    { rain, air, dengue },
+    { ...found, issues },
     {
       headers: {
         // All layers present: the CDN may serve this for 15 min, and a stale copy for up to an hour while it refreshes.

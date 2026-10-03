@@ -10,17 +10,19 @@ export async function getWithRetry(
   url: string,
   headers?: Record<string, string>,
   retryMs: number[] = RETRY_MS,
+  note?: (why: string) => void,
 ): Promise<Response | null> {
   for (let attempt = 0; ; attempt++) {
     let wait = retryMs[attempt];
     try {
       const res = await fetch(url, { headers, cache: "no-store", signal: AbortSignal.timeout(ATTEMPT_TIMEOUT_MS) });
       if (res.ok) return res;
+      note?.(`HTTP ${res.status}`);
       if (res.status !== 429 && res.status < 500) return null;
       const retryAfter = Number(res.headers.get("retry-after"));
       if (Number.isFinite(retryAfter) && retryAfter > 0) wait = Math.min(retryAfter * 1000, 5_000);
-    } catch {
-      // timeout or network error: try again
+    } catch (e) {
+      note?.(e instanceof Error ? e.name : "network error"); // timeout or network error: try again
     }
     if (attempt >= retryMs.length) return null;
     await sleep(wait);

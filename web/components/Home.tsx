@@ -10,6 +10,7 @@ import { AIR, DENGUE, RAIN, dengueSummary, gradient, tint, type LayerData, type 
 const MapView = dynamic(() => import("./MapView"), { ssr: false });
 const REFRESH_MS = 60_000;
 const LAYER_REFRESH_MS = 900_000;
+const LAYER_RETRY_MS = 60_000;
 const CHIPS: [LayerKey, string][] = [
   ["rain", "Rain"],
   ["air", "Air quality"],
@@ -54,13 +55,27 @@ export default function Home() {
     const run = () =>
       fetch("/api/layers")
         .then((r) => (r.ok ? (r.json() as Promise<LayerData>) : Promise.reject(new Error(String(r.status)))))
-        .then((d) => live && (setData(d), setLoaded(true)))
-        .catch(() => live && (setData({ rain: null, air: null, dengue: null }), setLoaded(true)));
+        .then((d) => {
+          if (!live) return;
+          // A layer that came back empty keeps its last good value; a failed call changes nothing.
+          setData((prev) => ({ rain: d.rain ?? prev.rain, air: d.air ?? prev.air, dengue: d.dengue ?? prev.dengue }));
+          setLoaded(true);
+          next(d.rain !== null && d.air !== null && d.dengue !== null);
+        })
+        .catch(() => {
+          if (!live) return;
+          setLoaded(true);
+          next(false);
+        });
+    // Everything present: refresh rarely. Something missing: try again in a minute.
+    const next = (complete: boolean) => {
+      timer = setTimeout(run, complete ? LAYER_REFRESH_MS : LAYER_RETRY_MS);
+    };
+    let timer: ReturnType<typeof setTimeout>;
     run();
-    const t = setInterval(run, LAYER_REFRESH_MS);
     return () => {
       live = false;
-      clearInterval(t);
+      clearTimeout(timer);
     };
   }, [wanted]);
 
