@@ -2,6 +2,16 @@
 
 Decisions that shape scope, data or governance. Newest first. Each entry says what was decided, why, and what would reopen it.
 
+## D-020 · 2026-10-03 · Hospitals and polyclinics are shown as a quiet directory layer
+
+**Decision.** A "Hospitals & clinics" chip shows 54 places as fixed markers: 17 hospitals (public and private), 9 community hospitals and 28 polyclinics, told apart by shape (square, hollow square, circle) and by name from a closer zoom. There is no figure, colour scale, ordering or "nearest" on it, and the legend says it is a directory, that opening hours are not shown, and to call 995 in an emergency. The list is a static file, `web/lib/care.json`, built by `scripts/build-care.mjs` from a hand-kept list of names, with coordinates from OneMap; a name OneMap does not return fails the build instead of being guessed. A hospital within 100 m of one of our ED pins is not drawn twice. The existing ED sites and their paused feed are untouched (D-017).
+
+**Why.** No open dataset lists all hospitals and polyclinics: data.gov.sg has 8 polyclinic vaccination sites and 1,193 CHAS GP clinics (2024, no hours), and OpenStreetMap in our tiles misses many polyclinics. A short curated list is verifiable by name; it is also small enough to keep honest. It answers "where are the care facilities" without saying where to go (D-001).
+
+**Provisional.** The kind is not a claim about emergency care: private hospitals and polyclinics differ in what they take and when, and the data has no hours. Urgent-care centres, 24-hour clinics and the CHAS clinics are not in this first version; "urgent or ambulatory" needs hours sourced one by one. New or closed sites need a manual edit of the script's list.
+
+**Reopen if** a maintained open list with hours appears (MOH, SingHealth, OSM tagging), or the layer is read as advice on where to go.
+
 ## D-019 · 2026-10-03 · Layer data is fetched rarely and fails softly; the server function stays as a thin proxy
 
 **Decision.** `/api/layers` stays, but as a cache in front of data.gov.sg, not a live feed. Rain and air quality are refreshed at most every 15 minutes, dengue every hour (the file changes about daily). The server keeps the last good value per layer and serves it to every visitor; if a refresh fails it serves the last good value rather than "unavailable", and a failure is never kept as a result. Rate limiting (429), server errors and network errors are retried twice (1 s, then 3 s); a 404 is not. The response carries `Cache-Control: s-maxage=900, stale-while-revalidate=3600` when every layer is present and `s-maxage=60` when one is missing, so the CDN absorbs most visits and a recovered source shows within a minute. The page re-requests every 15 minutes while a layer is on.

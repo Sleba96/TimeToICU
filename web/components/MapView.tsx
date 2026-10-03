@@ -7,6 +7,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { style } from "@/lib/mapStyle";
 import type { Site } from "@/lib/data";
 import { placeTags, type Rect, type TagBox } from "@/lib/placement";
+import { careWithout, kindLabel, type CareSite } from "@/lib/care";
 import { DENGUE, FIELD_COORDS, airBand, dengueText, airField, nearestRain, rainField, rainText, type LayerData, type LayerKey } from "@/lib/layers";
 
 maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
@@ -57,6 +58,7 @@ export default function MapView({
   sites,
   selected,
   layers,
+  care,
   data,
   onSelect,
   onClear,
@@ -64,6 +66,7 @@ export default function MapView({
   sites: Site[];
   selected: string | null;
   layers: Set<LayerKey>;
+  care: boolean;
   data: LayerData;
   onSelect: (code: string) => void;
   onClear: () => void;
@@ -73,10 +76,11 @@ export default function MapView({
   const entries = useRef<Map<string, Entry>>(new Map());
   const airMarkers = useRef<maplibregl.Marker[]>([]);
   const dengueMarkers = useRef<maplibregl.Marker[]>([]);
+  const careMarkers = useRef<maplibregl.Marker[]>([]);
   const callbacks = useRef({ onSelect, onClear });
   callbacks.current = { onSelect, onClear };
-  const live = useRef({ layers, data });
-  live.current = { layers, data };
+  const live = useRef({ layers, data, care });
+  live.current = { layers, data, care };
   const fitted = useRef(false);
   const [ready, setReady] = useState(false);
 
@@ -92,6 +96,7 @@ export default function MapView({
     container.classList.toggle("l-rain", live.current.layers.has("rain"));
     container.classList.toggle("l-air", live.current.layers.has("air"));
     container.classList.toggle("l-dengue", live.current.layers.has("dengue"));
+    container.classList.toggle("l-care", live.current.care);
     const { clientWidth: W, clientHeight: H } = container;
     const list = [...entries.current.values()].sort((a, b) =>
       a.site.open === b.site.open ? a.site.code.localeCompare(b.site.code) : a.site.open ? -1 : 1,
@@ -275,6 +280,25 @@ export default function MapView({
     }
     layout.current();
   }, [ready, data.dengue, layers]);
+
+  // Hospitals and polyclinics: a fixed directory (D-020). Sites with their own pin are left out so nothing shows twice.
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    careMarkers.current.forEach((a) => a.remove());
+    careMarkers.current = [];
+    if (care) {
+      const list: CareSite[] = careWithout(sites);
+      for (const c of list) {
+        const root = el("div", `care ${c.kind}`);
+        root.setAttribute("role", "img");
+        root.setAttribute("aria-label", `${c.name}, ${kindLabel(c.kind).toLowerCase()}`);
+        root.append(el("span", "shape"), el("span", "nm", c.name));
+        careMarkers.current.push(new maplibregl.Marker({ element: root, anchor: "center" }).setLngLat([c.lon, c.lat]).addTo(m));
+      }
+    }
+    layout.current();
+  }, [care, sites, ready]);
 
   // Air region labels: shown from a closer zoom, with the NEA band name in text.
   useEffect(() => {
