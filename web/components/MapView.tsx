@@ -270,7 +270,7 @@ export default function MapView({
     dengueMarkers.current.forEach((a) => a.remove());
     dengueMarkers.current = [];
     for (const c of d?.clusters ?? []) {
-      const label = el("div", "dnglbl", dengueText(c.cases));
+      const label = el("div", "dnglbl", `${dengueText(c.cases)} of dengue`);
       dengueMarkers.current.push(new maplibregl.Marker({ element: label, anchor: "center" }).setLngLat([c.lon, c.lat]).addTo(m));
     }
     layout.current();
