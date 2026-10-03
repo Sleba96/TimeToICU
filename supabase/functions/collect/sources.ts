@@ -340,6 +340,93 @@ export function parseHolidays(body: string): Parsed {
 }
 
 // ---------------------------------------------------------------------------
+// Dengue clusters (NEA via data.gov.sg, GeoJSON with case counts).
+// ---------------------------------------------------------------------------
+
+export const DENGUE_URL = "https://data.gov.sg/api/action/datastore_search_sql?sql=SELECT%20*%20FROM%20%22d_dbfabf16158d1b0e1c420627c0819168%22&limit=100";
+
+/**
+ * Compute centroid of a polygon (first ring only).
+ */
+function polygonCentroid(coords: number[][][]): { lat: number; lon: number } | null {
+  if (!coords[0] || coords[0].length < 3) return null;
+  const ring = coords[0];
+  let lat = 0, lon = 0;
+  for (const [lng, lti] of ring) {
+    lat += lti;
+    lon += lng;
+  }
+  return { lat: lat / ring.length, lon: lon / ring.length };
+}
+
+export function parseDengue(body: string): Parsed {
+  const out = empty();
+  let d: unknown;
+  try {
+    d = JSON.parse(body);
+  } catch {
+    throw new Error("dengue: invalid JSON");
+  }
+
+  // Check if it's a FeatureCollection (GeoJSON format)
+  if (typeof d === "object" && d !== null && "type" in d && d.type === "FeatureCollection") {
+    const features = Array.isArray((d as any).features) ? (d as any).features : [];
+    for (const feature of features) {
+      if (feature.type !== "Feature" || !feature.geometry || !feature.properties) {
+        out.issues.push({ kind: "invalid_feature", detail: feature });
+        continue;
+      }
+      const props = feature.properties;
+      const geom = feature.geometry;
+      const caseCount = props.case_count;
+      const lastUpdated = props.last_updated;
+      const clusterName = props.location_name || props.cluster_id || "unknown";
+
+      if (!Number.isFinite(caseCount)) {
+        out.issues.push({ kind: "unparsable_value", detail: { cluster: clusterName, case_count: caseCount } });
+        continue;
+      }
+
+      // Extract centroid for location
+      let centroid = null;
+      if (geom.type === "Polygon" && Array.isArray(geom.coordinates)) {
+        centroid = polygonCentroid(geom.coordinates as number[][][]);
+      } else if (geom.type === "Point" && Array.isArray(geom.coordinates)) {
+        const [lon, lat] = geom.coordinates;
+        centroid = { lat, lon };
+      }
+
+      // Create observation for case count
+      out.observations.push({
+        metric: "dengue_cluster_cases",
+        location: `dengue:${clusterName}`,
+        observed_at: lastUpdated || null,
+        value: caseCount,
+        value_text: null,
+      });
+
+      // Create location if we have a centroid
+      if (centroid) {
+        out.locations.push({
+          code: `dengue:${clusterName}`,
+          kind: "weather_station",
+          name: `Dengue cluster: ${clusterName}`,
+          lat: centroid.lat,
+          lon: centroid.lon,
+        });
+      }
+    }
+    if (features.length === 0) {
+      out.issues.push({ kind: "no_clusters", detail: null });
+    }
+  } else {
+    throw new Error("dengue: expected FeatureCollection");
+  }
+
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // ICU utilisation by epi-week (static MOH series on data.gov.sg)
 
 const ICU_URL = "https://data.gov.sg/api/action/datastore_search?limit=500&resource_id=d_ac42b0ea4ae0528bc9dbef90f0658f2b";
@@ -419,6 +506,12 @@ export const SOURCES: Record<string, SourceDef> = {
     cadenceMinutes: 15,
     fetch: simpleFetch("https://api.data.gov.sg/v1/transport/taxi-availability"),
     parse: parseTaxi,
+  },
+  dengue: {
+    id: "dengue",
+    cadenceMinutes: 60,
+    fetch: simpleFetch(DENGUE_URL),
+    parse: (b) => parseDengue(b),
   },
   icu_epiweek: {
     id: "icu_epiweek",

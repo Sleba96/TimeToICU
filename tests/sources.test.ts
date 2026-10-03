@@ -9,6 +9,7 @@ import {
   type Fetched,
   type Hospital,
   parseAirTemperature,
+  parseDengue,
   parseEdWaits,
   parseHolidays,
   parseIcuEpiweek,
@@ -157,6 +158,28 @@ test("epiWeekStart: Sunday start, week 1 holds 4 January", () => {
   assert.equal(epiWeekStart(2023, 1), "2023-01-01");
   assert.equal(epiWeekStart(2024, 1), "2023-12-31");
   assert.equal(epiWeekStart(2024, 8), "2024-02-18");
+});
+
+test("Dengue clusters: two clusters with case counts, locations created from centroids", () => {
+  const p = parseDengue(fixture("dengue.json"));
+  assert.deepEqual(p.issues, []);
+  assert.equal(p.observations.length, 2);
+  assert.equal(p.locations.length, 2);
+  assert.ok(p.observations.every((o) => o.metric === "dengue_cluster_cases" && o.location.startsWith("dengue:")));
+  const cases = p.observations.map((o) => o.value).sort((a, b) => (a ?? 0) - (b ?? 0));
+  assert.deepEqual(cases, [3, 5]);
+  assert.ok(p.locations.every((l) => l.kind === "weather_station" && l.lat > 1.3 && l.lat < 1.4));
+});
+
+test("dengue clusters: empty feature collection", () => {
+  const p = parseDengue(JSON.stringify({ type: "FeatureCollection", features: [] }));
+  assert.equal(p.issues[0].kind, "no_clusters");
+});
+
+test("dengue clusters: invalid feature throws", () => {
+  const p = parseDengue(JSON.stringify({ type: "FeatureCollection", features: [{ type: "Invalid" }] }));
+  assert.equal(p.issues[0].kind, "invalid_feature");
+  assert.deepEqual(p.observations, []);
 });
 
 test("PM2.5 hourly: five regions, 1-hour metric, source timestamp kept", () => {
