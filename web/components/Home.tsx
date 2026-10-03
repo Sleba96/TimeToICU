@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import Footer from "./Footer";
 import Sheet from "./Sheet";
 import { loadSites, type Site } from "@/lib/data";
-import { AIR, RAIN, gradient, tint, type LayerData, type LayerKey } from "@/lib/layers";
+import { AIR, DENGUE, RAIN, dengueSummary, gradient, tint, type LayerData, type LayerKey } from "@/lib/layers";
 
 const MapView = dynamic(() => import("./MapView"), { ssr: false });
 const REFRESH_MS = 60_000;
@@ -13,6 +13,7 @@ const LAYER_REFRESH_MS = 300_000;
 const CHIPS: [LayerKey, string][] = [
   ["rain", "Rain"],
   ["air", "Air quality"],
+  ["dengue", "Dengue"],
 ];
 
 export default function Home() {
@@ -20,7 +21,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [layers, setLayers] = useState<Set<LayerKey>>(new Set());
-  const [data, setData] = useState<LayerData>({ rain: null, air: null });
+  const [data, setData] = useState<LayerData>({ rain: null, air: null, dengue: null });
   const [loaded, setLoaded] = useState(false);
   const clear = useCallback(() => setSelected(null), []);
   const toggle = (k: LayerKey) =>
@@ -54,7 +55,7 @@ export default function Home() {
       fetch("/api/layers")
         .then((r) => (r.ok ? (r.json() as Promise<LayerData>) : Promise.reject(new Error(String(r.status)))))
         .then((d) => live && (setData(d), setLoaded(true)))
-        .catch(() => live && (setData({ rain: null, air: null }), setLoaded(true)));
+        .catch(() => live && (setData({ rain: null, air: null, dengue: null }), setLoaded(true)));
     run();
     const t = setInterval(run, LAYER_REFRESH_MS);
     return () => {
@@ -67,6 +68,7 @@ export default function Home() {
   const missing = loaded ? CHIPS.filter(([k]) => layers.has(k) && !data[k]).map(([, n]) => n) : [];
   const showRain = layers.has("rain") && data.rain !== null;
   const showAir = layers.has("air") && data.air !== null;
+  const showDengue = layers.has("dengue") && data.dengue !== null;
   const dry = data.rain !== null && data.rain.stations.every((st) => st.mm <= 0);
 
   return (
@@ -88,7 +90,7 @@ export default function Home() {
         )}
         {site && <Sheet site={site} onClose={clear} />}
       </main>
-      {(showRain || showAir) && (
+      {(showRain || showAir || showDengue) && (
         <div className="legend" aria-label="Map legend">
           {showRain && (
             <>
@@ -110,6 +112,16 @@ export default function Home() {
                   {band.name}
                 </span>
               ))}
+            </div>
+          )}
+          {showDengue && data.dengue && (
+            <div className="legend-row bands">
+              <b>{DENGUE.title}</b>
+              <span className="band">
+                <i style={{ background: tint(DENGUE.rgb, 0.35), borderColor: tint(DENGUE.rgb, 1) }} aria-hidden="true" />
+                {dengueSummary(data.dengue)}
+              </span>
+              <p className="legend-note">{DENGUE.note}</p>
             </div>
           )}
         </div>

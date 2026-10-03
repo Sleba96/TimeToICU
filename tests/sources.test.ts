@@ -4,6 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
+  DENGUE_POLL_URL,
   distanceKm,
   epiWeekStart,
   type Fetched,
@@ -160,26 +161,35 @@ test("epiWeekStart: Sunday start, week 1 holds 4 January", () => {
   assert.equal(epiWeekStart(2024, 8), "2024-02-18");
 });
 
-test("Dengue clusters: two clusters with case counts, locations created from centroids", () => {
+test("dengue: island-wide totals from the real cluster file, newest update as timestamp", () => {
   const p = parseDengue(fixture("dengue.json"));
   assert.deepEqual(p.issues, []);
-  assert.equal(p.observations.length, 2);
-  assert.equal(p.locations.length, 2);
-  assert.ok(p.observations.every((o) => o.metric === "dengue_cluster_cases" && o.location.startsWith("dengue:")));
-  const cases = p.observations.map((o) => o.value).sort((a, b) => (a ?? 0) - (b ?? 0));
-  assert.deepEqual(cases, [3, 5]);
-  assert.ok(p.locations.every((l) => l.kind === "weather_station" && l.lat > 1.3 && l.lat < 1.4));
+  assert.deepEqual(p.observations.map((o) => [o.metric, o.location, o.value]), [
+    ["dengue_clusters", "SG", 9],
+    ["dengue_cases_total", "SG", 120],
+    ["dengue_cluster_max_cases", "SG", 83],
+  ]);
+  assert.ok(p.observations.every((o) => o.observed_at === "2026-09-29T15:01:15+08:00"));
 });
 
-test("dengue clusters: empty feature collection", () => {
-  const p = parseDengue(JSON.stringify({ type: "FeatureCollection", features: [] }));
-  assert.equal(p.issues[0].kind, "no_clusters");
+test("dengue: no clusters is a real zero; bad rows are flagged; wrong shape throws", () => {
+  const none = parseDengue(JSON.stringify({ type: "FeatureCollection", features: [] }));
+  assert.deepEqual(none.observations.map((o) => o.value), [0, 0, 0]);
+  const bad = parseDengue(JSON.stringify({ type: "FeatureCollection", features: [{ geometry: {}, properties: { CASE_SIZE: "x" } }] }));
+  assert.equal(bad.issues[0].kind, "unparsable_record");
+  assert.throws(() => parseDengue("{}"));
 });
 
-test("dengue clusters: invalid feature throws", () => {
-  const p = parseDengue(JSON.stringify({ type: "FeatureCollection", features: [{ type: "Invalid" }] }));
-  assert.equal(p.issues[0].kind, "invalid_feature");
-  assert.deepEqual(p.observations, []);
+test("dengue: fetch follows the signed url from poll-download", async () => {
+  const urls: string[] = [];
+  const get = (url: string): Promise<Fetched> => {
+    urls.push(url);
+    const body = url.includes("poll-download") ? JSON.stringify({ code: 0, data: { url: "https://s3.example/file.geojson?sig=1" } }) : fixture("dengue.json");
+    return Promise.resolve({ status: 200, body, contentType: null });
+  };
+  const f = await SOURCES.dengue.fetch(get);
+  assert.deepEqual(urls, [DENGUE_POLL_URL, "https://s3.example/file.geojson?sig=1"]);
+  assert.equal(parseDengue(f.body).observations.length, 3);
 });
 
 test("PM2.5 hourly: five regions, 1-hour metric, source timestamp kept", () => {

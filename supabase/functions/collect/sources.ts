@@ -340,89 +340,47 @@ export function parseHolidays(body: string): Parsed {
 }
 
 // ---------------------------------------------------------------------------
-// Dengue clusters (NEA via data.gov.sg, GeoJSON with case counts).
+// Dengue clusters (NEA, data.gov.sg dataset d_dbfabf16...). A GeoJSON file, reached in two steps:
+// poll-download returns a short-lived signed URL. Stored as island-wide totals, not as polygons.
 // ---------------------------------------------------------------------------
 
-export const DENGUE_URL = "https://data.gov.sg/api/action/datastore_search_sql?sql=SELECT%20*%20FROM%20%22d_dbfabf16158d1b0e1c420627c0819168%22&limit=100";
+export const DENGUE_POLL_URL = "https://api-open.data.gov.sg/v1/public/api/datasets/d_dbfabf16158d1b0e1c420627c0819168/poll-download";
 
-/**
- * Compute centroid of a polygon (first ring only).
- */
-function polygonCentroid(coords: number[][][]): { lat: number; lon: number } | null {
-  if (!coords[0] || coords[0].length < 3) return null;
-  const ring = coords[0];
-  let lat = 0, lon = 0;
-  for (const [lng, lti] of ring) {
-    lat += lti;
-    lon += lng;
-  }
-  return { lat: lat / ring.length, lon: lon / ring.length };
+async function fetchDengue(get: Getter): Promise<Fetched> {
+  const meta = await get(DENGUE_POLL_URL);
+  if (meta.status !== 200) return meta;
+  const url: unknown = JSON.parse(meta.body)?.data?.url;
+  if (typeof url !== "string") throw new Error("dengue: poll-download gave no url");
+  return get(url);
+}
+
+/** FMEL_UPD_D is "yyyymmddhhmmss". The publisher does not state a time zone; Singapore time is assumed. */
+export function dengueTimestamp(raw: unknown): string | null {
+  const m = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/.exec(String(raw ?? ""));
+  return m ? `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}+08:00` : null;
 }
 
 export function parseDengue(body: string): Parsed {
   const out = empty();
-  let d: unknown;
-  try {
-    d = JSON.parse(body);
-  } catch {
-    throw new Error("dengue: invalid JSON");
-  }
-
-  // Check if it's a FeatureCollection (GeoJSON format)
-  if (typeof d === "object" && d !== null && "type" in d && d.type === "FeatureCollection") {
-    const features = Array.isArray((d as any).features) ? (d as any).features : [];
-    for (const feature of features) {
-      if (feature.type !== "Feature" || !feature.geometry || !feature.properties) {
-        out.issues.push({ kind: "invalid_feature", detail: feature });
-        continue;
-      }
-      const props = feature.properties;
-      const geom = feature.geometry;
-      const caseCount = props.case_count;
-      const lastUpdated = props.last_updated;
-      const clusterName = props.location_name || props.cluster_id || "unknown";
-
-      if (!Number.isFinite(caseCount)) {
-        out.issues.push({ kind: "unparsable_value", detail: { cluster: clusterName, case_count: caseCount } });
-        continue;
-      }
-
-      // Extract centroid for location
-      let centroid = null;
-      if (geom.type === "Polygon" && Array.isArray(geom.coordinates)) {
-        centroid = polygonCentroid(geom.coordinates as number[][][]);
-      } else if (geom.type === "Point" && Array.isArray(geom.coordinates)) {
-        const [lon, lat] = geom.coordinates;
-        centroid = { lat, lon };
-      }
-
-      // Create observation for case count
-      out.observations.push({
-        metric: "dengue_cluster_cases",
-        location: `dengue:${clusterName}`,
-        observed_at: lastUpdated || null,
-        value: caseCount,
-        value_text: null,
-      });
-
-      // Create location if we have a centroid
-      if (centroid) {
-        out.locations.push({
-          code: `dengue:${clusterName}`,
-          kind: "weather_station",
-          name: `Dengue cluster: ${clusterName}`,
-          lat: centroid.lat,
-          lon: centroid.lon,
-        });
-      }
+  const d = JSON.parse(body);
+  if (d?.type !== "FeatureCollection" || !Array.isArray(d?.features)) throw new Error("dengue: unexpected response shape");
+  const sizes: number[] = [];
+  let latest: string | null = null;
+  for (const f of d.features) {
+    const size = Number(f?.properties?.CASE_SIZE);
+    if (!Number.isInteger(size) || size < 0 || !f?.geometry) {
+      out.issues.push({ kind: "unparsable_record", detail: f?.properties ?? null });
+      continue;
     }
-    if (features.length === 0) {
-      out.issues.push({ kind: "no_clusters", detail: null });
-    }
-  } else {
-    throw new Error("dengue: expected FeatureCollection");
+    sizes.push(size);
+    const ts = dengueTimestamp(f.properties.FMEL_UPD_D);
+    if (ts && (latest === null || ts > latest)) latest = ts;
   }
-
+  // The file carries no overall timestamp; the newest cluster update stands in. An empty file is a real "no clusters".
+  const at = (metric: string, value: number) => out.observations.push({ metric, location: "SG", observed_at: latest, value, value_text: null });
+  at("dengue_clusters", sizes.length);
+  at("dengue_cases_total", sizes.reduce((a, b) => a + b, 0));
+  at("dengue_cluster_max_cases", sizes.length ? Math.max(...sizes) : 0);
   return out;
 }
 
@@ -507,12 +465,7 @@ export const SOURCES: Record<string, SourceDef> = {
     fetch: simpleFetch("https://api.data.gov.sg/v1/transport/taxi-availability"),
     parse: parseTaxi,
   },
-  dengue: {
-    id: "dengue",
-    cadenceMinutes: 60,
-    fetch: simpleFetch(DENGUE_URL),
-    parse: (b) => parseDengue(b),
-  },
+  dengue: { id: "dengue", cadenceMinutes: 60, fetch: fetchDengue, parse: (b) => parseDengue(b) },
   icu_epiweek: {
     id: "icu_epiweek",
     cadenceMinutes: 1440,
