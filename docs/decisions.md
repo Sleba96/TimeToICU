@@ -2,6 +2,16 @@
 
 Decisions that shape scope, data or governance. Newest first. Each entry says what was decided, why, and what would reopen it.
 
+## D-019 · 2026-10-03 · Layer data is fetched rarely and fails softly; the server function stays as a thin proxy
+
+**Decision.** `/api/layers` stays, but as a cache in front of data.gov.sg, not a live feed. Rain and air quality are refreshed at most every 15 minutes, dengue every hour (the file changes about daily). The server keeps the last good value per layer and serves it to every visitor; if a refresh fails it serves the last good value rather than "unavailable", and a failure is never kept as a result. Rate limiting (429), server errors and network errors are retried twice (1 s, then 3 s); a 404 is not. The response carries `Cache-Control: s-maxage=900, stale-while-revalidate=3600` when every layer is present and `s-maxage=60` when one is missing, so the CDN absorbs most visits and a recovered source shows within a minute. The page re-requests every 15 minutes while a layer is on.
+
+**Why.** Dengue read "not available" in production. The dengue endpoint returned 429 once in twelve rapid calls from here, shared Vercel addresses are likelier to be limited (D-009), and the old route kept a failed read for five minutes. Is the function worth keeping? Yes, as a proxy: the API itself allows browsers (CORS open), but the dengue file sits on S3 without CORS headers, so a browser cannot read it, and calling from every browser would spend the rate limit per visit and expose any API key. Reading the layers from stored data instead would mean moving polygons and station readings into Supabase; not worth it for figures that are only context.
+
+**Provisional.** The server's last good value lives in the function instance, so a cold instance starts empty; the CDN copy and the retries cover that. The production cause is not confirmed (no access to the site's logs). The collector's own schedule (rain every 5 minutes for the research record) is unchanged.
+
+**Reopen if** layers are still often unavailable (then set `DATA_GOV_SG_API_KEY`, or move the snapshot into Supabase), or a layer is read as live to the minute.
+
 ## D-018 · 2026-10-03 · Layers: dengue clusters as outlines on the map (provisional)
 
 **Decision.** A third chip, Dengue, shows NEA's active dengue clusters (two or more cases within 14 days and 150 m) as amber outlines with a light fill, the same chip, legend and server-cache pattern as rain and air (D-015). Zoomed out, each cluster is a dot sized by case count (capped, so one large cluster does not hide the rest); from about zoom 12 the dot fades into the outline, and from zoom 11 each cluster carries a "N cases" label. The legend gives the colour, the totals ("9 clusters, 120 cases") and the one-line definition of a cluster. Amber, because red stays for the selected site and 995 and green is avoided (D-015). The web layer reads the file live through `/api/layers` (cached 5 minutes, nothing stored). The collector stores only island-wide totals per hour (`dengue_clusters`, `dengue_cases_total`, `dengue_cluster_max_cases`, location `SG`), not polygons.

@@ -9,7 +9,7 @@ import { AIR, DENGUE, RAIN, dengueSummary, gradient, tint, type LayerData, type 
 
 const MapView = dynamic(() => import("./MapView"), { ssr: false });
 const REFRESH_MS = 60_000;
-const LAYER_REFRESH_MS = 300_000;
+const LAYER_REFRESH_MS = 900_000;
 const CHIPS: [LayerKey, string][] = [
   ["rain", "Rain"],
   ["air", "Air quality"],
